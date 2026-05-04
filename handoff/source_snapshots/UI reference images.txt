@@ -1,0 +1,128 @@
+已重新製作成 **Drop4Up Antigravity Handoff Package V0.3 — Detailed**。  
+這次不是簡版，而是把目前整段對話的最新決策完整整理進去：
+
+- 4 tabs：**Home / Drop / Journal / Profile**
+- V0.3 design tokens：`#F2F2EE / #FBFBFA / #628FBE / #8FB1D0 / #BFD1E3 / #2F3438 / #9AA3AD`
+- Home 不放 timeline
+- Drop 是完整 quick create 頁面
+- Journal 取代 AI Lab
+- 字體要對年長者更清楚
+- AI 不可改寫、不搜尋網路、不自行生成屬靈內容
+- UI reference images + prompts + Antigravity prompts 都已整理好
+
+下載：
+
+[下載 V0.3 Detailed ZIP Package](sandbox:/mnt/data/Drop4Up_Antigravity_Handoff_V0.3_DETAILED.zip)
+
+單檔 Markdown 版本：
+
+[下載 V0.3 Detailed FULL Markdown](sandbox:/mnt/data/Drop4Up_Antigravity_Handoff_V0.3_DETAILED_FULL.md)
+
+---
+
+## 這版是根據哪些核心內容整理
+
+我保留了原始企劃中的核心精神：Drop4Up 是一個反多巴胺、寧靜、具反思性、情感安全的心靈空間，並沿用新擬物化、柔和光影、低壓 UI 的方向。fileciteturn13file0
+
+同時也整合了屬靈生命成長 App 的核心功能：文字 / 語音 / 相片紀錄、tag 搜尋、圖文卡片、備份還原，以及 AI 僅能根據使用者輸入資料運作、不能搜尋網路或自行生成內容的原則。fileciteturn13file1
+
+---
+
+## Package 內容概覽
+
+| 檔案 / 資料夾 | 大致內容 |
+|---|---|
+| `README.md` | V0.3 使用說明、最新設計決策、如何餵給 Antigravity |
+| `FILE_OVERVIEW.md` | 每個檔案用途總覽 |
+| `ANTIGRAVITY_BUILD_PROMPT.md` | 可直接貼給 Antigravity 的主 prompt |
+| `CHANGELOG_V0.3.md` | V0.2 → V0.3 的重要變更 |
+| `Drop4Up_Antigravity_Handoff_V0.3_DETAILED_FULL.md` | 所有主要文件整合成單一 Markdown |
+
+---
+
+## docs/ 內容
+
+| 檔案 | 大致內容 |
+|---|---|
+| `00_PROJECT_CONTEXT.md` | Drop4Up 產品背景、反多巴胺定位、屬靈反思目標 |
+| `01_PRODUCT_REQUIREMENTS.md` | MVP 功能、非目標、使用者故事、開發階段 |
+| `02_INFORMATION_ARCHITECTURE.md` | 最終 4-tab 架構：Home / Drop / Journal / Profile |
+| `03_UI_DESIGN_SPEC_V0.3.md` | V0.3 視覺規格、柔和白卡片、字體、間距、陰影 |
+| `04_DESIGN_TOKENS_FLUTTER.md` | Flutter 可直接使用的 color / spacing / radius / shadow tokens |
+| `05_SCREEN_BY_SCREEN_SPEC.md` | 四個頁面的詳細 UI 規格 |
+| `06_COMPONENT_SPEC.md` | NeumorphicCard、TagChip、BottomNav、SearchBar 等 component 規格 |
+| `07_INTERACTION_MOTION_SPEC.md` | 動畫、按壓、haptic、transition 規格 |
+| `08_DATA_MODEL.md` | ReflectionEntry、Tag、VisualCard、BackupEnvelope data model |
+| `09_AI_RULES.md` | AI guardrails：不可改寫、不可生成屬靈內容、不可搜尋網路 |
+| `10_BACKUP_RESTORE_SPEC.md` | JSON 備份 / 還原格式與規則 |
+| `11_ACCESSIBILITY_READABILITY.md` | 年長者可讀性、字體大小、觸控尺寸、對比建議 |
+| `12_ACCEPTANCE_CRITERIA.md` | UI / 功能 / AI / 畫面驗收標準 |
+| `13_ANTIGRAVITY_WORKFLOW.md` | 建議給 Antigravity 的分階段開發流程 |
+| `14_REFERENCE_IMAGE_GUIDE.md` | Reference images 使用方式與注意事項 |
+| `15_COPYWRITING.md` | Home / Drop / Journal / Profile 的 UI 文案建議 |
+
+---
+
+## prompts/ 內容
+
+| 檔案 | 大致內容 |
+|---|---|
+| `prompts/reference_images/00_SHARED_STYLE.md` | 四張圖共用的 V0.3 風格規則 |
+| `01_Home_prompt.md` | 重新生成 Home.png 的 prompt |
+| `02_Drop_prompt.md` | 重新生成 Drop.png 的 prompt |
+| `03_Journal_prompt.md` | 重新生成 Journal.png 的 prompt，明確要求使用 V0.3 tokens |
+| `04_Profile_prompt.md` | 重新生成 Profile.png 的 prompt |
+| `prompts/antigravity/01_project_setup_prompt.md` | Antigravity 第一階段：Flutter project setup |
+| `02_components_prompt.md` | 建立 reusable components |
+| `03_home_prompt.md` | 建 Home screen |
+| `04_drop_prompt.md` | 建 Drop screen |
+| `05_journal_prompt.md` | 建 Journal screen |
+| `06_profile_prompt.md` | 建 Profile screen |
+
+---
+
+## references/ 內容
+
+| 檔案 | 大致內容 |
+|---|---|
+| `references/Home.png` | Home v0.3 reference image |
+| `references/Drop.png` | Drop v0.3 reference image |
+| `references/Journal.png` | Journal reference image |
+| `references/Profile.png` | Profile reference image |
+| `references/README.md` | 說明 reference image 只是 visual direction，實作時以 V0.3 tokens 為準 |
+
+我也特別在 `REFERENCE_IMAGE_GUIDE.md` 裡提醒：如果圖片裡出現舊色票，例如 `#FAFAFA`、`#7C96A8`、`#6E8FA3`，**不要採用舊色票**，要以 V0.3 tokens 為準。
+
+---
+
+## flutter_snippets/ 內容
+
+| 檔案 | 大致內容 |
+|---|---|
+| `drop4up_tokens.dart` | 可直接放進 Flutter 的 token file |
+| `component_blueprints.md` | 建議 widget 名稱與 component 責任分工 |
+
+---
+
+## 建議你接下來丟給 Antigravity 的第一句
+
+```text id="d14wit"
+Use the attached Drop4Up Antigravity Handoff Package V0.3 Detailed.
+
+Build UI prototype only.
+Do not build backend, login, cloud sync, database, or real AI yet.
+
+Use exactly 4 tabs:
+Home / Drop / Journal / Profile.
+
+Use the V0.3 design tokens exactly:
+Background #F2F2EE
+Card Surface #FBFBFA
+Primary Blue #628FBE
+Accent Blue #8FB1D0
+Light Blue #BFD1E3
+Text Primary #2F3438
+Text Secondary #9AA3AD
+
+After each screen is implemented, provide screenshots and compare against the reference images.
+```

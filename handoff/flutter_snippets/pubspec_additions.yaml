@@ -1,0 +1,10 @@
+# Add this under dependencies in pubspec.yaml
+# Keep your existing Flutter SDK entry.
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_inset_box_shadow: ^1.0.8
+
+# Then run:
+# flutter pub get
