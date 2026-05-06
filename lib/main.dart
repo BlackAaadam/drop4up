@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'screens/home_screen.dart';
 import 'ui/drop4up_scaffold.dart';
 import 'ui/drop4up_tag_chip.dart';
 import 'ui/drop4up_tokens.dart';
@@ -59,15 +60,13 @@ class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
     return Drop4UpScaffold(
       currentIndex: _tabIndex,
       onTabChanged: (index) => setState(() => _tabIndex = index),
-      body: _ShellPlaceholder(tab: tab),
+      body: _tabIndex == 0 ? const HomeScreen() : _ShellPlaceholder(tab: tab),
     );
   }
 }
 
 class _ShellPlaceholder extends StatelessWidget {
-  const _ShellPlaceholder({
-    required this.tab,
-  });
+  const _ShellPlaceholder({required this.tab});
 
   final _ShellTab tab;
 
@@ -95,10 +94,7 @@ class _ShellPlaceholder extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 30),
-        Text(
-          '${tab.label} shell preview',
-          style: textTheme.headlineLarge,
-        ),
+        Text('${tab.label} shell preview', style: textTheme.headlineLarge),
         const SizedBox(height: 12),
         Text(
           '${tab.description}. This phase proves the reusable shell and custom 4-tab navigation only.',
@@ -132,10 +128,7 @@ class _ShellPlaceholder extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 26),
-        PrimaryDropButton(
-          label: 'Preview Drop Button',
-          onTap: () {},
-        ),
+        PrimaryDropButton(label: 'Preview Drop Button', onTap: () {}),
       ],
     );
   }

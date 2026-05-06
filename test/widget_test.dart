@@ -1,15 +1,23 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:drop4up/main.dart';
 
 void main() {
-  testWidgets('renders Phase 3 shell preview and switches tabs', (tester) async {
+  testWidgets('renders Home screen and switches tabs', (tester) async {
+    tester.view.physicalSize = const Size(393, 873);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(const Drop4UpPreviewApp());
 
     expect(find.text('Drop4Up'), findsOneWidget);
-    expect(find.text('Home shell preview'), findsOneWidget);
-    expect(find.text('Shell surface'), findsOneWidget);
-    expect(find.text('Grace'), findsOneWidget);
+    expect(find.text('安靜下來，\n記得祂的同在。'), findsOneWidget);
+    expect(find.text('Explore Tags'), findsOneWidget);
+    expect(find.text('恩典'), findsOneWidget);
+    expect(find.text('Home shell preview'), findsNothing);
 
     await tester.tap(find.text('Drop'));
     await tester.pumpAndSettle();

@@ -3,11 +3,7 @@ import 'package:flutter_inset_shadow/flutter_inset_shadow.dart';
 
 import 'drop4up_tokens.dart';
 
-enum SoftSurfaceVariant {
-  raised,
-  inset,
-  pressed,
-}
+enum SoftSurfaceVariant { raised, inset, pressed }
 
 class SoftSurface extends StatelessWidget {
   const SoftSurface({
@@ -49,56 +45,73 @@ class SoftSurface extends StatelessWidget {
       SoftSurfaceVariant.raised => BoxDecoration(
         color: color,
         borderRadius: borderRadius,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Drop4UpTokens.softWhite.withValues(alpha: 0.88),
-            color,
-            Color.alphaBlend(
-              Drop4UpTokens.coolShadow.withValues(alpha: 0.10),
-              color,
-            ),
-          ],
-          stops: const [0, 0.48, 1],
-        ),
+        gradient: _raisedGradient(color),
         boxShadow: [
           BoxShadow(
-            color: Drop4UpTokens.softWhite.withValues(alpha: 0.95),
-            offset: const Offset(-8, -8),
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.54),
+            offset: const Offset(-2, -2),
+            blurRadius: 5,
+            spreadRadius: -4,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.40),
+            offset: const Offset(0, 10),
             blurRadius: 18,
             spreadRadius: -8,
           ),
           BoxShadow(
-            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.80),
-            offset: const Offset(12, 14),
-            blurRadius: 30,
-            spreadRadius: -12,
+            color: Drop4UpTokens.coolShadow.withValues(alpha: 0.14),
+            offset: const Offset(3, 8),
+            blurRadius: 16,
+            spreadRadius: -10,
           ),
           BoxShadow(
-            color: Drop4UpTokens.coolShadow.withValues(alpha: 0.26),
-            offset: const Offset(4, 6),
-            blurRadius: 12,
-            spreadRadius: -8,
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.48),
+            offset: const Offset(0, 1.6),
+            blurRadius: 3.2,
+            spreadRadius: -2.8,
+            inset: true,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.22),
+            offset: const Offset(0, 0.8),
+            blurRadius: 1,
+            spreadRadius: -1,
+            inset: true,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.coolShadow.withValues(alpha: 0.13),
+            offset: const Offset(0, -1.8),
+            blurRadius: 3.6,
+            spreadRadius: -2.6,
+            inset: true,
           ),
         ],
       ),
       SoftSurfaceVariant.inset => BoxDecoration(
         color: color,
         borderRadius: borderRadius,
+        gradient: _insetGradient(color),
         boxShadow: [
           BoxShadow(
-            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.70),
-            offset: const Offset(5, 5),
-            blurRadius: 12,
-            spreadRadius: -2,
+            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.46),
+            offset: const Offset(3, 3),
+            blurRadius: 8,
+            spreadRadius: -2.4,
             inset: true,
           ),
           BoxShadow(
-            color: Drop4UpTokens.softWhite.withValues(alpha: 0.92),
-            offset: const Offset(-5, -5),
-            blurRadius: 12,
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.82),
+            offset: const Offset(-3, -3),
+            blurRadius: 8,
             spreadRadius: -3,
+            inset: true,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.primaryBlue.withValues(alpha: 0.08),
+            offset: const Offset(0, -1.6),
+            blurRadius: 3.4,
+            spreadRadius: -2.4,
             inset: true,
           ),
         ],
@@ -106,41 +119,88 @@ class SoftSurface extends StatelessWidget {
       SoftSurfaceVariant.pressed => BoxDecoration(
         color: color,
         borderRadius: borderRadius,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.alphaBlend(
-              Drop4UpTokens.warmShadow.withValues(alpha: 0.14),
-              color,
-            ),
-            color,
-            Drop4UpTokens.softWhite.withValues(alpha: 0.74),
-          ],
-        ),
+        gradient: _pressedGradient(color),
         boxShadow: [
           BoxShadow(
-            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.58),
-            offset: const Offset(4, 4),
-            blurRadius: 11,
+            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.50),
+            offset: const Offset(3, 3),
+            blurRadius: 9,
             spreadRadius: -2,
             inset: true,
           ),
           BoxShadow(
-            color: Drop4UpTokens.softWhite.withValues(alpha: 0.88),
-            offset: const Offset(-4, -4),
-            blurRadius: 12,
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.78),
+            offset: const Offset(-3, -3),
+            blurRadius: 10,
             spreadRadius: -3,
             inset: true,
           ),
           BoxShadow(
-            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.18),
-            offset: const Offset(3, 4),
-            blurRadius: 10,
-            spreadRadius: -7,
+            color: Drop4UpTokens.coolShadow.withValues(alpha: 0.10),
+            offset: const Offset(0, -1.4),
+            blurRadius: 3.4,
+            spreadRadius: -2.4,
+            inset: true,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.16),
+            offset: const Offset(0, 6),
+            blurRadius: 12,
+            spreadRadius: -9,
           ),
         ],
       ),
     };
+  }
+
+  LinearGradient _raisedGradient(Color base) {
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      stops: const [0, 0.14, 0.48, 0.82, 1],
+      colors: [
+        Color.alphaBlend(Drop4UpTokens.softWhite.withValues(alpha: 0.64), base),
+        Color.alphaBlend(Drop4UpTokens.softWhite.withValues(alpha: 0.22), base),
+        base,
+        Color.alphaBlend(
+          Drop4UpTokens.warmShadow.withValues(alpha: 0.06),
+          base,
+        ),
+        Color.alphaBlend(
+          Drop4UpTokens.coolShadow.withValues(alpha: 0.08),
+          base,
+        ),
+      ],
+    );
+  }
+
+  LinearGradient _insetGradient(Color base) {
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color.alphaBlend(
+          Drop4UpTokens.coolShadow.withValues(alpha: 0.08),
+          base,
+        ),
+        base,
+        Color.alphaBlend(Drop4UpTokens.softWhite.withValues(alpha: 0.24), base),
+      ],
+    );
+  }
+
+  LinearGradient _pressedGradient(Color base) {
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color.alphaBlend(
+          Drop4UpTokens.warmShadow.withValues(alpha: 0.12),
+          base,
+        ),
+        base,
+        Color.alphaBlend(Drop4UpTokens.softWhite.withValues(alpha: 0.36), base),
+      ],
+    );
   }
 }

@@ -40,8 +40,9 @@ class _PrimaryDropButtonState extends State<PrimaryDropButton> {
           curve: Drop4UpTokens.calmCurve,
           scale: _pressed ? 0.985 : 1,
           child: SoftSurface(
-            variant:
-                _pressed ? SoftSurfaceVariant.pressed : SoftSurfaceVariant.raised,
+            variant: _pressed
+                ? SoftSurfaceVariant.pressed
+                : SoftSurfaceVariant.raised,
             color: Drop4UpTokens.primaryBlue,
             radius: Drop4UpTokens.pillRadius,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -49,16 +50,16 @@ class _PrimaryDropButtonState extends State<PrimaryDropButton> {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  widget.icon,
-                  size: 22,
-                  color: Drop4UpTokens.softWhite,
-                ),
+                Icon(widget.icon, size: 22, color: Drop4UpTokens.softWhite),
                 const SizedBox(width: 10),
-                Text(
-                  widget.label,
-                  style: textTheme.labelLarge?.copyWith(
-                    color: Drop4UpTokens.softWhite,
+                Flexible(
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.labelLarge?.copyWith(
+                      color: Drop4UpTokens.softWhite,
+                    ),
                   ),
                 ),
               ],

@@ -40,19 +40,22 @@ class _Drop4UpTagChipState extends State<Drop4UpTagChip> {
         onTapDown: widget.onTap == null
             ? null
             : (_) => setState(() => _pressed = true),
-        onTapCancel:
-            widget.onTap == null ? null : () => setState(() => _pressed = false),
+        onTapCancel: widget.onTap == null
+            ? null
+            : () => setState(() => _pressed = false),
         onTapUp: widget.onTap == null
             ? null
             : (_) => setState(() => _pressed = false),
         onTap: widget.onTap,
         child: SoftSurface(
-          variant: active ? SoftSurfaceVariant.inset : SoftSurfaceVariant.raised,
+          variant: active
+              ? SoftSurfaceVariant.inset
+              : SoftSurfaceVariant.raised,
           color: active
               ? Drop4UpTokens.lightBlue.withValues(alpha: 0.34)
               : Drop4UpTokens.cardSurface,
           radius: Drop4UpTokens.pillRadius,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
