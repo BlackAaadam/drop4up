@@ -22,7 +22,10 @@ void main() {
     await tester.tap(find.text('Drop'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Drop shell preview'), findsOneWidget);
+    expect(find.text('記下一滴\n心裡的回響。'), findsOneWidget);
+    expect(find.text('來源'), findsOneWidget);
+    expect(find.text('Save Drop'), findsOneWidget);
+    expect(find.text('Drop shell preview'), findsNothing);
     expect(find.text('Journal'), findsOneWidget);
   });
 }

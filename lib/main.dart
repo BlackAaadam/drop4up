@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'screens/drop_screen.dart';
 import 'screens/home_screen.dart';
 import 'ui/drop4up_scaffold.dart';
-import 'ui/drop4up_tag_chip.dart';
 import 'ui/drop4up_tokens.dart';
 import 'ui/primary_drop_button.dart';
 import 'ui/soft_icon_button.dart';
@@ -60,7 +60,11 @@ class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
     return Drop4UpScaffold(
       currentIndex: _tabIndex,
       onTabChanged: (index) => setState(() => _tabIndex = index),
-      body: _tabIndex == 0 ? const HomeScreen() : _ShellPlaceholder(tab: tab),
+      body: switch (_tabIndex) {
+        0 => const HomeScreen(),
+        1 => const DropScreen(),
+        _ => _ShellPlaceholder(tab: tab),
+      },
     );
   }
 }
@@ -115,15 +119,7 @@ class _ShellPlaceholder extends StatelessWidget {
                 style: textTheme.bodyMedium,
               ),
               const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: const [
-                  Drop4UpTagChip(label: 'Grace', count: 12, selected: true),
-                  Drop4UpTagChip(label: 'Prayer', count: 8),
-                  Drop4UpTagChip(label: 'Peace', count: 5),
-                ],
-              ),
+              Text('Placeholder content', style: textTheme.bodyMedium),
             ],
           ),
         ),
