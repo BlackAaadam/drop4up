@@ -11,6 +11,16 @@ Implement a custom `Drop4UpScaffold` that provides:
 - custom bottom nav,
 - bottom padding safe for 393×873.
 
+## Global screen execution rules
+
+Every future screen pass must follow these rules:
+
+- Optimize for a single-page Zenfone 10 preview first; avoid requiring vertical scrolling for the primary screen state.
+- Use Traditional Chinese for supporting UI copy and body text; short page titles or branded labels may remain English when visually appropriate.
+- Apply the container, shadow, and inset material language learned from Home across all new surfaces: flat calm centers, clear rounded edges, top/left light, right/bottom depth, and tactile pressed/inset states.
+- Keep layout density, viewport sizing, visual style, icons, and component treatment consistent across Home / Drop / Journal / Profile.
+- Use Chrome or phone preview as the final visual reference; test/golden renders are only structural checks.
+
 ## Home
 
 Purpose: visual reflection and gentle discovery.
