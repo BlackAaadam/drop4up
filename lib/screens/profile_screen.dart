@@ -96,16 +96,10 @@ class _ProfileSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
       child: Row(
         children: [
-          Drop4UpTactileSurface(
-            radius: 24,
-            width: 48,
-            height: 48,
-            color: Drop4UpTokens.lightBlue.withValues(alpha: 0.28),
-            child: const Icon(
-              Icons.person_outline_rounded,
-              size: 24,
-              color: Drop4UpTokens.primaryBlue,
-            ),
+          const _ProfileNeutralIconBadge(
+            icon: Icons.person_outline_rounded,
+            size: 48,
+            iconSize: 24,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -148,18 +142,7 @@ class _ProfileActionRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          Drop4UpTactileSurface(
-            variant: Drop4UpTactileSurfaceVariant.inset,
-            radius: 18,
-            width: 36,
-            height: 36,
-            color: Drop4UpTokens.lightBlue.withValues(alpha: 0.22),
-            child: Icon(
-              action.icon,
-              size: 19,
-              color: Drop4UpTokens.primaryBlue,
-            ),
-          ),
+          _ProfileNeutralIconBadge(icon: action.icon, size: 36, iconSize: 19),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -195,6 +178,29 @@ class _ProfileActionRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileNeutralIconBadge extends StatelessWidget {
+  const _ProfileNeutralIconBadge({
+    required this.icon,
+    required this.size,
+    required this.iconSize,
+  });
+
+  final IconData icon;
+  final double size;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drop4UpTactileSurface(
+      radius: size / 2,
+      width: size,
+      height: size,
+      color: Drop4UpTokens.cardSurface,
+      child: Icon(icon, size: iconSize, color: Drop4UpTokens.textSecondary),
     );
   }
 }

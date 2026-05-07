@@ -56,7 +56,7 @@ class JournalScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Text(
           'Journal',
           style: textTheme.headlineLarge?.copyWith(fontSize: 32, height: 1.08),
@@ -69,9 +69,9 @@ class JournalScreen extends StatelessWidget {
             color: Drop4UpTokens.textSecondary,
           ),
         ),
-        const SizedBox(height: 14),
-        const _SearchRow(),
         const SizedBox(height: 12),
+        const _SearchRow(),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -84,7 +84,7 @@ class JournalScreen extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Row(
           children: [
             Text('Recent Drops', style: textTheme.titleMedium),
@@ -97,12 +97,12 @@ class JournalScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 9),
         for (final entry in _entries) ...[
           _JournalEntryCard(entry: entry),
-          if (entry != _entries.last) const SizedBox(height: 10),
+          if (entry != _entries.last) const SizedBox(height: 9),
         ],
-        const SizedBox(height: 12),
+        const SizedBox(height: 11),
         const _CreateVisualCardButton(),
       ],
     );
@@ -121,7 +121,7 @@ class _SearchRow extends StatelessWidget {
         Expanded(
           child: Drop4UpTactileSurface(
             variant: Drop4UpTactileSurfaceVariant.inset,
-            height: 46,
+            height: 44,
             radius: 23,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
@@ -146,7 +146,7 @@ class _SearchRow extends StatelessWidget {
         SoftIconButton(
           icon: Icons.filter_list_rounded,
           label: '篩選',
-          size: 46,
+          size: 44,
           iconSize: 21,
           onTap: () {},
         ),
@@ -167,7 +167,7 @@ class _JournalEntryCard extends StatelessWidget {
     return SoftSurface(
       variant: SoftSurfaceVariant.prominent,
       radius: 26,
-      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -204,7 +204,7 @@ class _JournalEntryCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: textTheme.bodyMedium?.copyWith(height: 1.32),
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 7),
           Wrap(
             spacing: 7,
             runSpacing: 7,
@@ -227,7 +227,7 @@ class _MiniTag extends StatelessWidget {
 
     return Drop4UpTactileSurface(
       radius: Drop4UpTokens.pillRadius,
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       color: Drop4UpTokens.lightBlue.withValues(alpha: 0.18),
       child: Text(
         label,
@@ -249,7 +249,7 @@ class _CreateVisualCardButton extends StatelessWidget {
 
     return Drop4UpTactileSurface(
       variant: Drop4UpTactileSurfaceVariant.primaryRaised,
-      height: 54,
+      height: 52,
       radius: 22,
       color: Drop4UpTokens.primaryBlue,
       child: Row(
