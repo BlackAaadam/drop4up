@@ -36,5 +36,16 @@ void main() {
     expect(find.text('全部'), findsOneWidget);
     expect(find.text('Create Visual Card'), findsOneWidget);
     expect(find.text('Journal shell preview'), findsNothing);
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profile'), findsWidgets);
+    expect(find.text('管理資料，保留安靜回看的空間。'), findsOneWidget);
+    expect(find.text('Backup JSON'), findsOneWidget);
+    expect(find.text('Restore JSON'), findsOneWidget);
+    expect(find.text('Preferences'), findsOneWidget);
+    expect(find.text('About Drop4Up'), findsOneWidget);
+    expect(find.text('Profile shell preview'), findsNothing);
   });
 }
