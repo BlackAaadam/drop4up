@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'drop4up_bottom_nav.dart';
 import 'drop4up_tokens.dart';
 
+const _bottomNavHorizontalInset = 18.0;
+
 class Drop4UpScaffold extends StatelessWidget {
   const Drop4UpScaffold({
     super.key,
@@ -34,8 +36,8 @@ class Drop4UpScaffold extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: Drop4UpTokens.screenPadding,
-              right: Drop4UpTokens.screenPadding,
+              left: _bottomNavHorizontalInset,
+              right: _bottomNavHorizontalInset,
               bottom: 22,
               child: Drop4UpBottomNav(
                 currentIndex: currentIndex,

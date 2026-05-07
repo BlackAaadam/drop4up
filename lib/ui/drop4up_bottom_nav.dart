@@ -1,17 +1,6 @@
 import 'package:flutter/material.dart' hide BoxDecoration, BoxShadow;
 import 'package:flutter_inset_shadow/flutter_inset_shadow.dart';
 
-import 'drop4up_tokens.dart';
-
-// Nav 本體顏色：中央必須維持 Card Surface，靠上下緣用很淡的色差做厚度。
-const _navBase = Color(0xFFFBFBFA);
-const _navTopEdge = Color(0xFFFFFFFF);
-const _navSoftCrown = Color(0xFFFCFCFB);
-const _navLowerEdge = Color(0xFFEDEDEA);
-const _navWarmContact = Color(0xFFD2CEC6);
-const _navCoolContact = Color(0xFFC0C8D0);
-const _navInnerCompression = Color(0xFFAEB7C0);
-
 const _navPressDuration = Duration(milliseconds: 100);
 const _navTextDuration = Duration(milliseconds: 150);
 
@@ -25,8 +14,16 @@ class Drop4UpBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onChanged;
 
-  static const double _height = 58;
-  static const double _radius = 22;
+  static const double _height = 66;
+  static const double _radius = 26;
+
+  static const Color _navBase = Color(0xFFFBFBFA);
+  static const Color _activeColor = Color(0xFF628FBE);
+  static const Color _inactiveColor = Color(0xFF9AA3AD);
+
+  static const Color _navWarmContact = Color(0xFF2F3438);
+  static const Color _navCoolContact = Color(0xFF628FBE);
+  static const Color _navInnerCompression = Color(0xFF9AA3AD);
 
   static const List<_Drop4UpNavItem> _items = [
     _Drop4UpNavItem('Home', Icons.home_rounded, Icons.home_outlined),
@@ -48,74 +45,69 @@ class Drop4UpBottomNav extends StatelessWidget {
     return Container(
       height: _height,
       margin: EdgeInsets.zero,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(_radius),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          // 上緣提亮、中段保持乾淨、下緣稍微壓暗，讓 nav 像有厚度的白色材質。
-          stops: [0.0, 0.04, 0.06, 0.94, 0.96, 1.0],
-          colors: [
-            _navTopEdge,
-            _navSoftCrown,
-            _navBase,
-            _navBase,
-            Color(0xFFF5F5F3),
-            _navLowerEdge,
-          ],
-        ),
+        color: _navBase,
         boxShadow: [
-          // 左上外側保留很淡的接觸陰影，讓邊緣從背景中分離。
+          // 1) Ultra-thin top/left contact definition.
+          // This should be barely visible, not a halo.
           BoxShadow(
-            color: _navWarmContact.withValues(alpha: 0.24),
-            offset: const Offset(-1.5, -1.5),
-            blurRadius: 4,
-            spreadRadius: -4,
+            color: _navWarmContact.withValues(alpha: 0.020),
+            offset: const Offset(-0.35, -0.35),
+            blurRadius: 1.4,
+            spreadRadius: -5.8,
           ),
-          // 主要接觸陰影往右下收，對應左上光源。
+          // 2) Main bottom-right contact shadow.
+          // Slightly stronger than the previous pass to recover the reference depth.
           BoxShadow(
-            color: _navWarmContact.withValues(alpha: 0.66),
-            offset: const Offset(3, 8),
-            blurRadius: 10,
-            spreadRadius: -5,
+            color: _navWarmContact.withValues(alpha: 0.150),
+            offset: const Offset(4.2, 6.8),
+            blurRadius: 12.5,
+            spreadRadius: -5.8,
           ),
-          // 第二層只保留很淡的底部重量，避免下方陰影過度擴散。
+          // 3) Broad bottom ambient shadow.
+          // This gives the soft grounded underside seen in the reference.
           BoxShadow(
-            color: _navWarmContact.withValues(alpha: 0.16),
-            offset: const Offset(1, 15),
-            blurRadius: 20,
-            spreadRadius: -18,
+            color: _navWarmContact.withValues(alpha: 0.045),
+            offset: const Offset(0.0, 11.5),
+            blurRadius: 20.0,
+            spreadRadius: -18.5,
           ),
-          // 右下冷色陰影短而集中，補出右邊厚度但不拉髒背景。
+          // 4) Cool lower-right thickness.
+          // Keep subtle; this should not make the right edge dirty.
           BoxShadow(
-            color: _navCoolContact.withValues(alpha: 0.20),
-            offset: const Offset(5, 8),
-            blurRadius: 12,
-            spreadRadius: -10,
+            color: _navCoolContact.withValues(alpha: 0.070),
+            offset: const Offset(5.2, 6.8),
+            blurRadius: 13.0,
+            spreadRadius: -11.5,
           ),
-          // 內側上緣高光：這是 nav 看起來俐落、不是灰白塊的關鍵。
+          // 5) Inner top rim highlight.
+          // Stronger than the previous no-gradient version so the top edge is defined.
+          // It must remain soft, not a sharp white line.
           BoxShadow(
-            color: const Color(0xFFFFFFFF).withValues(alpha: 0.68),
-            offset: const Offset(0, 1.6),
-            blurRadius: 3.8,
-            spreadRadius: -3,
+            color: const Color(0xFFFFFFFF).withValues(alpha: 0.82),
+            offset: const Offset(1.2, 3.4),
+            blurRadius: 3.2,
+            spreadRadius: -2.8,
             inset: true,
           ),
-          // 內側細高光，保留白色材質的薄亮邊。
+          // 6) Very fine inner top polish.
+          // A tiny highlight only; should not look like a border.
           BoxShadow(
-            color: const Color(0xFFFFFFFF).withValues(alpha: 0.34),
-            offset: const Offset(0, 0.8),
+            color: const Color(0xFFFFFFFF).withValues(alpha: 0.6),
+            offset: const Offset(0.25, 0.75),
             blurRadius: 1.0,
-            spreadRadius: -1.0,
+            spreadRadius: -1.05,
             inset: true,
           ),
-          // 內側右下壓縮暗邊，讓厚度集中在光源反方向。
+          // 7) Inner lower/right compression.
+          // This restores rim thickness without using gradient.
           BoxShadow(
-            color: _navInnerCompression.withValues(alpha: 0.38),
-            offset: const Offset(-1.8, -3.4),
-            blurRadius: 3.8,
-            spreadRadius: -3.4,
+            color: _navInnerCompression.withValues(alpha: 0.48),
+            offset: const Offset(-1.8, -3.8),
+            blurRadius: 2.8,
+            spreadRadius: -2.7,
             inset: true,
           ),
         ],
@@ -158,8 +150,8 @@ class _Drop4UpNavButtonState extends State<_Drop4UpNavButton> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final color = widget.selected
-        ? Drop4UpTokens.primaryBlue
-        : Drop4UpTokens.textSecondary;
+        ? Drop4UpBottomNav._activeColor
+        : Drop4UpBottomNav._inactiveColor;
 
     return Semantics(
       button: true,
