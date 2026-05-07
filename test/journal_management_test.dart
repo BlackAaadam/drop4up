@@ -1,0 +1,151 @@
+import 'package:drop4up/data/reflection_entry.dart';
+import 'package:drop4up/main.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/test_reflection_entry_repository.dart';
+
+void main() {
+  testWidgets('search finds Traditional Chinese text', (tester) async {
+    await _pumpJournalHarness(tester, entries: [_entry(text: '在安靜裡尋見平安。')]);
+
+    await tester.enterText(find.byKey(const Key('journal_search_input')), '平安');
+    await _pumpUi(tester);
+
+    expect(find.text('在安靜裡尋見平安。'), findsOneWidget);
+    expect(find.text('找不到符合的 drops。'), findsNothing);
+  });
+
+  testWidgets('empty search shows all entries', (tester) async {
+    await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(id: 'entry-1', text: '第一筆。'),
+        _entry(id: 'entry-2', text: '第二筆。'),
+      ],
+    );
+
+    expect(find.text('第一筆。'), findsOneWidget);
+    expect(find.text('第二筆。'), findsOneWidget);
+  });
+
+  testWidgets('no-result state works', (tester) async {
+    await _pumpJournalHarness(tester, entries: [_entry(text: '只留下安靜。')]);
+
+    await tester.enterText(
+      find.byKey(const Key('journal_search_input')),
+      '不存在',
+    );
+    await _pumpUi(tester);
+
+    expect(find.text('只留下安靜。'), findsNothing);
+    expect(find.text('找不到符合的 drops。'), findsOneWidget);
+  });
+
+  testWidgets('edit preserves exact spaces and line breaks', (tester) async {
+    final repository = await _pumpJournalHarness(
+      tester,
+      entries: [_entry(id: 'entry-edit', text: '原本的文字。')],
+    );
+    const editedText = '  神的平安仍在。\n\n「不要害怕。」\n\t阿們。  ';
+
+    await tester.tap(find.byKey(const ValueKey('journal_entry_entry-edit')));
+    await _pumpUi(tester);
+    await tester.enterText(
+      find.byKey(const Key('entry_detail_text_input')),
+      editedText,
+    );
+    await tester.tap(find.byKey(const Key('entry_save_button')));
+    await _pumpUi(tester);
+
+    final entry = (await repository.load()).entries.single;
+
+    expect(entry.text, editedText);
+    expect(entry.text.codeUnits, editedText.codeUnits);
+    expect(entry.updatedAt, DateTime.utc(2026, 5, 7, 12, 30));
+    expect(entry.createdAt, DateTime.utc(2026, 5, 7, 8));
+  });
+
+  testWidgets('favorite persists after reload', (tester) async {
+    final repository = await _pumpJournalHarness(
+      tester,
+      entries: [_entry(id: 'entry-favorite', text: '收藏這一滴。')],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('favorite_entry-favorite')));
+    await _pumpUi(tester);
+    await tester.pumpWidget(Drop4UpPreviewApp(repository: repository));
+    await _pumpUi(tester);
+
+    final entry = (await repository.load()).entries.single;
+
+    expect(entry.isFavorite, isTrue);
+    expect(find.byIcon(Icons.bookmark_rounded), findsOneWidget);
+  });
+
+  testWidgets('delete persists after reload', (tester) async {
+    final repository = await _pumpJournalHarness(
+      tester,
+      entries: [_entry(id: 'entry-delete', text: '準備刪除。')],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('journal_entry_entry-delete')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_delete_button')));
+    await _pumpUi(tester);
+    expect(find.text('刪除這一滴？'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('delete_confirm_button')));
+    await _pumpUi(tester);
+    await tester.pumpWidget(Drop4UpPreviewApp(repository: repository));
+    await _pumpUi(tester);
+
+    expect((await repository.load()).entries, isEmpty);
+    expect(find.text('準備刪除。'), findsNothing);
+    expect(find.text('還沒有儲存的 drops。'), findsOneWidget);
+  });
+}
+
+Future<TestReflectionEntryRepository> _pumpJournalHarness(
+  WidgetTester tester, {
+  required List<ReflectionEntry> entries,
+}) async {
+  tester.view.physicalSize = const Size(393, 873);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  final repository = TestReflectionEntryRepository();
+  await repository.saveEntries(entries);
+  await tester.pumpWidget(
+    Drop4UpPreviewApp(
+      repository: repository,
+      clock: () => DateTime.utc(2026, 5, 7, 12, 30),
+    ),
+  );
+  await _pumpUi(tester);
+  await tester.tap(find.text('Journal'));
+  await _pumpUi(tester);
+  return repository;
+}
+
+ReflectionEntry _entry({
+  String id = 'entry-1',
+  required String text,
+  bool isFavorite = false,
+}) {
+  return ReflectionEntry(
+    id: id,
+    text: text,
+    source: '講道',
+    tags: const [],
+    createdAt: DateTime.utc(2026, 5, 7, 8),
+    updatedAt: DateTime.utc(2026, 5, 7, 8),
+    isFavorite: isFavorite,
+  );
+}
+
+Future<void> _pumpUi(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 350));
+}

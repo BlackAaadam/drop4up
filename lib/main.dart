@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'data/reflection_entry_repository.dart';
 import 'screens/drop_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal_screen.dart';
 import 'screens/profile_screen.dart';
+import 'state/reflection_entries_controller.dart';
+import 'state/reflection_entries_scope.dart';
 import 'ui/drop4up_scaffold.dart';
 import 'ui/drop4up_tokens.dart';
 import 'ui/primary_drop_button.dart';
@@ -14,26 +17,64 @@ void main() {
   runApp(const Drop4UpPreviewApp());
 }
 
-class Drop4UpPreviewApp extends StatelessWidget {
-  const Drop4UpPreviewApp({super.key});
+class Drop4UpPreviewApp extends StatefulWidget {
+  const Drop4UpPreviewApp({
+    super.key,
+    this.repository,
+    this.clock,
+    this.idGenerator,
+  });
+
+  final ReflectionEntryRepository? repository;
+  final ReflectionClock? clock;
+  final ReflectionIdGenerator? idGenerator;
+
+  @override
+  State<Drop4UpPreviewApp> createState() => _Drop4UpPreviewAppState();
+}
+
+class _Drop4UpPreviewAppState extends State<Drop4UpPreviewApp> {
+  late final ReflectionEntriesController _entriesController;
+
+  @override
+  void initState() {
+    super.initState();
+    _entriesController = ReflectionEntriesController(
+      repository: widget.repository ?? ReflectionEntryRepository(),
+      clock: widget.clock,
+      idGenerator: widget.idGenerator,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _entriesController.load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _entriesController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Drop4UpTokens.textTheme();
 
-    return MaterialApp(
-      title: 'Drop4Up',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: Drop4UpTokens.background,
-        textTheme: textTheme,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Drop4UpTokens.primaryBlue,
-          surface: Drop4UpTokens.cardSurface,
+    return ReflectionEntriesScope(
+      controller: _entriesController,
+      child: MaterialApp(
+        title: 'Drop4Up',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          scaffoldBackgroundColor: Drop4UpTokens.background,
+          textTheme: textTheme,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Drop4UpTokens.primaryBlue,
+            surface: Drop4UpTokens.cardSurface,
+          ),
         ),
+        home: const ShellPreviewScreen(),
       ),
-      home: const ShellPreviewScreen(),
     );
   }
 }
