@@ -3,7 +3,7 @@ import 'package:flutter_inset_shadow/flutter_inset_shadow.dart';
 
 import 'drop4up_tokens.dart';
 
-enum SoftSurfaceVariant { raised, inset, pressed }
+enum SoftSurfaceVariant { raised, prominent, inset, pressed }
 
 class SoftSurface extends StatelessWidget {
   const SoftSurface({
@@ -84,6 +84,52 @@ class SoftSurface extends StatelessWidget {
             offset: const Offset(0, -1.8),
             blurRadius: 3.6,
             spreadRadius: -2.6,
+            inset: true,
+          ),
+        ],
+      ),
+      SoftSurfaceVariant.prominent => BoxDecoration(
+        color: color,
+        borderRadius: borderRadius,
+        gradient: _raisedGradient(color),
+        boxShadow: [
+          BoxShadow(
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.58),
+            offset: const Offset(-2.2, -2.2),
+            blurRadius: 5.8,
+            spreadRadius: -4,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.50),
+            offset: const Offset(0, 13),
+            blurRadius: 22,
+            spreadRadius: -8,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.coolShadow.withValues(alpha: 0.20),
+            offset: const Offset(4, 10),
+            blurRadius: 18,
+            spreadRadius: -10,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.58),
+            offset: const Offset(0.8, 2.1),
+            blurRadius: 3.8,
+            spreadRadius: -2.6,
+            inset: true,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.28),
+            offset: const Offset(0, 0.8),
+            blurRadius: 1,
+            spreadRadius: -1,
+            inset: true,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.coolShadow.withValues(alpha: 0.20),
+            offset: const Offset(-1.2, -2.3),
+            blurRadius: 4.2,
+            spreadRadius: -2.8,
             inset: true,
           ),
         ],

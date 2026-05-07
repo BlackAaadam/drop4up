@@ -38,25 +38,28 @@ class HomeScreen extends StatelessWidget {
             SoftIconButton(
               icon: Icons.person_outline_rounded,
               label: '個人設定',
+              size: 44,
+              iconSize: 20,
               onTap: () {},
             ),
           ],
         ),
-        const SizedBox(height: 26),
+        const SizedBox(height: 18),
         Text(
           '安靜下來，\n記得祂的同在。',
-          style: textTheme.headlineLarge?.copyWith(height: 1.18),
+          style: textTheme.headlineLarge?.copyWith(fontSize: 29, height: 1.14),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Text(
           '用一點時間回望今天心裡被觸動的地方。',
           style: textTheme.bodyLarge?.copyWith(
+            fontSize: 15,
             color: Drop4UpTokens.textPrimary.withValues(alpha: 0.72),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         const _ReflectionCard(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         Row(
           children: [
             Text('Explore Tags', style: textTheme.titleMedium),
@@ -69,12 +72,12 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Wrap(
           spacing: 8,
-          runSpacing: 12,
+          runSpacing: 10,
           children: [
-            for (final tag in _tags)
+            for (final tag in _tags.take(6))
               Drop4UpTagChip(
                 label: tag.label,
                 count: tag.count,
@@ -83,8 +86,6 @@ class HomeScreen extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 24),
-        const _CalmReturnCard(),
       ],
     );
   }
@@ -98,6 +99,7 @@ class _ReflectionCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return SoftSurface(
+      variant: SoftSurfaceVariant.prominent,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,51 +134,6 @@ class _ReflectionCard extends StatelessWidget {
   }
 }
 
-class _CalmReturnCard extends StatelessWidget {
-  const _CalmReturnCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return SoftSurface(
-      height: 88,
-      radius: 30,
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 82,
-            height: 56,
-            child: CustomPaint(painter: _QuietDropPainter()),
-          ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('慢慢呼吸', style: textTheme.titleMedium),
-                const SizedBox(height: 6),
-                Text(
-                  '回到真正重要的事。',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: Drop4UpTokens.textPrimary.withValues(alpha: 0.64),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 30,
-            color: Drop4UpTokens.primaryBlue,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SoftReflectionCanvas extends StatelessWidget {
   const _SoftReflectionCanvas();
 
@@ -189,7 +146,7 @@ class _SoftReflectionCanvas extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(_radius),
       child: SizedBox(
-        height: 160,
+        height: 172,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -505,69 +462,6 @@ class _ReflectionLandscapePainter extends CustomPainter {
       ..close();
 
     canvas.drawPath(drop, dropPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _QuietDropPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width * 0.44, size.height * 0.78);
-    final ripplePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = Drop4UpTokens.primaryBlue.withValues(alpha: 0.18);
-
-    canvas
-      ..drawOval(
-        Rect.fromCenter(center: center, width: size.width * 0.88, height: 20),
-        ripplePaint,
-      )
-      ..drawOval(
-        Rect.fromCenter(center: center, width: size.width * 0.52, height: 11),
-        ripplePaint,
-      );
-
-    final drop = Path()
-      ..moveTo(size.width * 0.44, 5)
-      ..cubicTo(
-        size.width * 0.20,
-        size.height * 0.38,
-        size.width * 0.22,
-        size.height * 0.62,
-        size.width * 0.44,
-        size.height * 0.64,
-      )
-      ..cubicTo(
-        size.width * 0.66,
-        size.height * 0.62,
-        size.width * 0.70,
-        size.height * 0.38,
-        size.width * 0.44,
-        5,
-      )
-      ..close();
-
-    final dropPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Drop4UpTokens.softWhite.withValues(alpha: 0.92),
-          Drop4UpTokens.lightBlue.withValues(alpha: 0.72),
-          Drop4UpTokens.primaryBlue.withValues(alpha: 0.44),
-        ],
-      ).createShader(drop.getBounds());
-
-    canvas.drawPath(drop, dropPaint);
-
-    final edgePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Drop4UpTokens.primaryBlue.withValues(alpha: 0.34);
-    canvas.drawPath(drop, edgePaint);
   }
 
   @override

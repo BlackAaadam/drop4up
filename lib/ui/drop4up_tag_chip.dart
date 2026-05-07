@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'drop4up_tactile_surface.dart';
 import 'drop4up_tokens.dart';
-import 'soft_surface.dart';
 
 class Drop4UpTagChip extends StatefulWidget {
   const Drop4UpTagChip({
@@ -47,38 +47,45 @@ class _Drop4UpTagChipState extends State<Drop4UpTagChip> {
             ? null
             : (_) => setState(() => _pressed = false),
         onTap: widget.onTap,
-        child: SoftSurface(
-          variant: active
-              ? SoftSurfaceVariant.inset
-              : SoftSurfaceVariant.raised,
-          color: active
-              ? Drop4UpTokens.lightBlue.withValues(alpha: 0.34)
-              : Drop4UpTokens.cardSurface,
-          radius: Drop4UpTokens.pillRadius,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                widget.label,
-                style: textTheme.labelLarge?.copyWith(
-                  color: active
-                      ? Drop4UpTokens.primaryBlue
-                      : Drop4UpTokens.textPrimary,
-                ),
-              ),
-              if (widget.count != null) ...[
-                const SizedBox(width: 8),
+        child: AnimatedScale(
+          duration: Drop4UpTokens.quickDuration,
+          curve: Drop4UpTokens.calmCurve,
+          scale: _pressed ? 0.985 : 1,
+          child: Drop4UpTactileSurface(
+            variant: _pressed
+                ? Drop4UpTactileSurfaceVariant.pressed
+                : active
+                ? Drop4UpTactileSurfaceVariant.inset
+                : Drop4UpTactileSurfaceVariant.raised,
+            color: active
+                ? Drop4UpTokens.lightBlue.withValues(alpha: 0.34)
+                : Drop4UpTokens.cardSurface,
+            radius: Drop4UpTokens.pillRadius,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  widget.count.toString(),
-                  style: textTheme.labelMedium?.copyWith(
+                  widget.label,
+                  style: textTheme.labelLarge?.copyWith(
                     color: active
-                        ? Drop4UpTokens.primaryBlue.withValues(alpha: 0.78)
-                        : Drop4UpTokens.textSecondary,
+                        ? Drop4UpTokens.primaryBlue
+                        : Drop4UpTokens.textPrimary,
                   ),
                 ),
+                if (widget.count != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.count.toString(),
+                    style: textTheme.labelMedium?.copyWith(
+                      color: active
+                          ? Drop4UpTokens.primaryBlue.withValues(alpha: 0.78)
+                          : Drop4UpTokens.textSecondary,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

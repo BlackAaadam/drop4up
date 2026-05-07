@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'drop4up_tactile_surface.dart';
 import 'drop4up_tokens.dart';
-import 'soft_surface.dart';
 
 class SoftIconButton extends StatefulWidget {
   const SoftIconButton({
@@ -11,6 +11,7 @@ class SoftIconButton extends StatefulWidget {
     this.label,
     this.selected = false,
     this.size = Drop4UpTokens.iconButtonSize,
+    this.iconSize = 23,
   });
 
   final IconData icon;
@@ -18,6 +19,7 @@ class SoftIconButton extends StatefulWidget {
   final String? label;
   final bool selected;
   final double size;
+  final double iconSize;
 
   @override
   State<SoftIconButton> createState() => _SoftIconButtonState();
@@ -40,22 +42,29 @@ class _SoftIconButtonState extends State<SoftIconButton> {
         onTapCancel: () => setState(() => _pressed = false),
         onTapUp: (_) => setState(() => _pressed = false),
         onTap: widget.onTap,
-        child: SoftSurface(
-          variant: selectedOrPressed
-              ? SoftSurfaceVariant.inset
-              : SoftSurfaceVariant.raised,
-          color: selectedOrPressed
-              ? Drop4UpTokens.lightBlue.withValues(alpha: 0.28)
-              : Drop4UpTokens.cardSurface,
-          radius: widget.size / 2,
-          width: widget.size,
-          height: widget.size,
-          child: Icon(
-            widget.icon,
-            size: 23,
+        child: AnimatedScale(
+          duration: Drop4UpTokens.quickDuration,
+          curve: Drop4UpTokens.calmCurve,
+          scale: _pressed ? 0.975 : 1,
+          child: Drop4UpTactileSurface(
+            variant: _pressed
+                ? Drop4UpTactileSurfaceVariant.pressed
+                : selectedOrPressed
+                ? Drop4UpTactileSurfaceVariant.inset
+                : Drop4UpTactileSurfaceVariant.raised,
             color: selectedOrPressed
-                ? Drop4UpTokens.primaryBlue
-                : Drop4UpTokens.textSecondary,
+                ? Drop4UpTokens.lightBlue.withValues(alpha: 0.28)
+                : Drop4UpTokens.cardSurface,
+            radius: widget.size / 2,
+            width: widget.size,
+            height: widget.size,
+            child: Icon(
+              widget.icon,
+              size: widget.iconSize,
+              color: selectedOrPressed
+                  ? Drop4UpTokens.primaryBlue
+                  : Drop4UpTokens.textSecondary,
+            ),
           ),
         ),
       ),

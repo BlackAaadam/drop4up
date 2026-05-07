@@ -30,7 +30,7 @@ class Drop4UpScaffold extends StatelessWidget {
                   Drop4UpTokens.screenPadding,
                   28,
                   Drop4UpTokens.screenPadding,
-                  Drop4UpTokens.navHeight + 40,
+                  Drop4UpTokens.navHeight + 24,
                 ),
                 child: body,
               ),
@@ -38,7 +38,7 @@ class Drop4UpScaffold extends StatelessWidget {
             Positioned(
               left: _bottomNavHorizontalInset,
               right: _bottomNavHorizontalInset,
-              bottom: 22,
+              bottom: 14,
               child: Drop4UpBottomNav(
                 currentIndex: currentIndex,
                 onChanged: onTabChanged,
