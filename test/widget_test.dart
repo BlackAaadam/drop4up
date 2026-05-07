@@ -27,5 +27,14 @@ void main() {
     expect(find.text('Save Drop'), findsOneWidget);
     expect(find.text('Drop shell preview'), findsNothing);
     expect(find.text('Journal'), findsOneWidget);
+
+    await tester.tap(find.text('Journal'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Journal'), findsWidgets);
+    expect(find.text('搜尋、整理，安靜回看每一滴。'), findsOneWidget);
+    expect(find.text('全部'), findsOneWidget);
+    expect(find.text('Create Visual Card'), findsOneWidget);
+    expect(find.text('Journal shell preview'), findsNothing);
   });
 }

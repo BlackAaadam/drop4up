@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/drop_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/journal_screen.dart';
 import 'ui/drop4up_scaffold.dart';
 import 'ui/drop4up_tokens.dart';
 import 'ui/primary_drop_button.dart';
@@ -63,6 +64,7 @@ class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
       body: switch (_tabIndex) {
         0 => const HomeScreen(),
         1 => const DropScreen(),
+        2 => const JournalScreen(),
         _ => _ShellPlaceholder(tab: tab),
       },
     );
