@@ -7,11 +7,14 @@ import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
 const _sourceChips = [
-  _DropSource('講道', Icons.menu_book_outlined),
-  _DropSource('禱告', Icons.self_improvement_rounded),
+  _DropSource.material('講道', Icons.co_present_outlined),
+  _DropSource.material('禱告', Icons.volunteer_activism_outlined),
   _DropSource('靈修', Icons.wb_twilight_outlined),
-  _DropSource('其他', Icons.more_horiz_rounded),
+  _DropSource.material('閱讀', Icons.menu_book_outlined),
+  _DropSource.material('其他', Icons.more_horiz_rounded),
 ];
+
+const _manualTags = ['平安', '信心', '感恩', '愛'];
 
 class DropScreen extends StatelessWidget {
   const DropScreen({super.key});
@@ -99,6 +102,7 @@ class _DropEntryCard extends StatefulWidget {
 class _DropEntryCardState extends State<_DropEntryCard> {
   final TextEditingController _textController = TextEditingController();
   int _selectedSourceIndex = 0;
+  final Set<int> _selectedTagIndices = {};
   String? _statusText;
 
   @override
@@ -114,15 +118,24 @@ class _DropEntryCardState extends State<_DropEntryCard> {
       return;
     }
 
-    await ReflectionEntriesScope.read(
-      context,
-    ).addEntry(text: text, source: _sourceChips[_selectedSourceIndex].label);
+    final selectedTags = [
+      for (final index in _selectedTagIndices) _manualTags[index],
+    ];
+
+    await ReflectionEntriesScope.read(context).addEntry(
+      text: text,
+      source: _sourceChips[_selectedSourceIndex].label,
+      tags: selectedTags,
+    );
 
     if (!mounted) {
       return;
     }
     _textController.clear();
-    setState(() => _statusText = '已儲存在本機。');
+    setState(() {
+      _selectedTagIndices.clear();
+      _statusText = '已儲存在本機。';
+    });
   }
 
   @override
@@ -161,63 +174,12 @@ class _DropEntryCardState extends State<_DropEntryCard> {
             ],
           ),
           const SizedBox(height: 12),
-          Drop4UpTactileSurface(
-            variant: Drop4UpTactileSurfaceVariant.inset,
-            radius: 22,
-            height: 92,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            color: Drop4UpTokens.cardSurface,
-            child: Stack(
-              children: [
-                TextField(
-                  key: const Key('drop_text_input'),
-                  controller: _textController,
-                  maxLines: null,
-                  minLines: null,
-                  expands: true,
-                  maxLength: 300,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    counterText: '',
-                    isCollapsed: true,
-                    hintText: '寫下一句...',
-                    hintStyle: textTheme.bodyLarge?.copyWith(
-                      fontSize: 15,
-                      color: Drop4UpTokens.textSecondary,
-                    ),
-                  ),
-                  style: textTheme.bodyLarge?.copyWith(fontSize: 15),
-                  cursorColor: Drop4UpTokens.primaryBlue,
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _textController,
-                    builder: (context, value, _) {
-                      return Text(
-                        '${value.text.length}/300',
-                        style: textTheme.labelMedium?.copyWith(
-                          color: Drop4UpTokens.textSecondary,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            '來源',
-            style: textTheme.bodyMedium?.copyWith(
-              color: Drop4UpTokens.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
+          _DropEditorSurface(controller: _textController),
+          const SizedBox(height: 12),
+          _HorizontalChipRow(
+            height: 42,
             spacing: 8,
-            runSpacing: 8,
+            endPadding: 34,
             children: [
               for (var index = 0; index < _sourceChips.length; index++)
                 _SourceChip(
@@ -227,21 +189,36 @@ class _DropEntryCardState extends State<_DropEntryCard> {
                 ),
             ],
           ),
+          const SizedBox(height: 10),
+          _HorizontalChipRow(
+            height: 34,
+            spacing: 7,
+            endPadding: 22,
+            children: [
+              for (var index = 0; index < _manualTags.length; index++)
+                _ManualTagChip(
+                  label: '#${_manualTags[index]}',
+                  selected: _selectedTagIndices.contains(index),
+                  onTap: () {
+                    setState(() {
+                      if (_selectedTagIndices.contains(index)) {
+                        _selectedTagIndices.remove(index);
+                      } else {
+                        _selectedTagIndices.add(index);
+                      }
+                    });
+                  },
+                ),
+              _AddTagChip(onTap: () {}),
+            ],
+          ),
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  '可選附件',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: Drop4UpTokens.textSecondary,
-                  ),
-                ),
-              ),
               SoftIconButton(
                 icon: Icons.mic_none_rounded,
                 label: '語音',
-                size: 42,
+                size: 44,
                 iconSize: 21,
                 onTap: () {},
               ),
@@ -249,43 +226,48 @@ class _DropEntryCardState extends State<_DropEntryCard> {
               SoftIconButton(
                 icon: Icons.photo_camera_outlined,
                 label: '相機',
-                size: 42,
+                size: 44,
                 iconSize: 21,
                 onTap: () {},
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          GestureDetector(
-            key: const Key('save_drop_button'),
-            behavior: HitTestBehavior.opaque,
-            onTap: entriesController.isSaving ? null : _saveDrop,
-            child: Drop4UpTactileSurface(
-              variant: Drop4UpTactileSurfaceVariant.primaryRaised,
-              height: 54,
-              radius: 22,
-              color: Drop4UpTokens.primaryBlue,
-              child: Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.water_drop_outlined,
-                      size: 21,
-                      color: Drop4UpTokens.softWhite,
+              const Spacer(),
+              GestureDetector(
+                key: const Key('save_drop_button'),
+                behavior: HitTestBehavior.opaque,
+                onTap: entriesController.isSaving ? null : _saveDrop,
+                child: Drop4UpTactileSurface(
+                  variant: Drop4UpTactileSurfaceVariant.primaryRaised,
+                  width: 174,
+                  height: 60,
+                  radius: 24,
+                  color: Drop4UpTokens.primaryBlue,
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.water_drop_outlined,
+                          size: 21,
+                          color: Drop4UpTokens.softWhite,
+                        ),
+                        const SizedBox(width: 9),
+                        Flexible(
+                          child: Text(
+                            entriesController.isSaving ? '儲存中...' : 'Save Drop',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.titleMedium?.copyWith(
+                              color: Drop4UpTokens.softWhite,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 9),
-                    Text(
-                      entriesController.isSaving ? '儲存中...' : 'Save Drop',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: Drop4UpTokens.softWhite,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
           if (_statusText != null) ...[
             const SizedBox(height: 10),
@@ -410,6 +392,110 @@ class _QuietLeafPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+class _DropEditorSurface extends StatelessWidget {
+  const _DropEditorSurface({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Drop4UpTactileSurface(
+      variant: Drop4UpTactileSurfaceVariant.pressed,
+      radius: 27,
+      height: 122,
+      padding: const EdgeInsets.fromLTRB(18, 17, 18, 15),
+      color: Color.alphaBlend(
+        Drop4UpTokens.lightBlue.withValues(alpha: 0.028),
+        Drop4UpTokens.cardSurface,
+      ),
+      child: TextField(
+        key: const Key('drop_text_input'),
+        controller: controller,
+        maxLines: null,
+        minLines: null,
+        expands: true,
+        maxLength: 300,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          counterText: '',
+          isCollapsed: true,
+          hintText: 'Drop something here...',
+          hintStyle: textTheme.bodyLarge?.copyWith(
+            fontSize: 15.5,
+            height: 1.42,
+            color: Drop4UpTokens.textSecondary.withValues(alpha: 0.74),
+          ),
+        ),
+        style: textTheme.bodyLarge?.copyWith(
+          fontSize: 15.5,
+          height: 1.42,
+          color: Drop4UpTokens.textPrimary,
+        ),
+        cursorColor: Drop4UpTokens.primaryBlue,
+      ),
+    );
+  }
+}
+
+class _HorizontalChipRow extends StatelessWidget {
+  const _HorizontalChipRow({
+    required this.children,
+    required this.spacing,
+    required this.height,
+    this.endPadding = 0,
+  });
+
+  final List<Widget> children;
+  final double spacing;
+  final double height;
+  final double endPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scrollRow = ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.hardEdge,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < children.length; index++) ...[
+                if (index > 0) SizedBox(width: spacing),
+                children[index],
+              ],
+              if (endPadding > 0) SizedBox(width: endPadding),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: ClipRect(
+        child: ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (bounds) {
+            return const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Colors.black, Colors.black, Colors.transparent],
+              stops: [0, 0.88, 1],
+            ).createShader(bounds);
+          },
+          child: scrollRow,
+        ),
+      ),
+    );
+  }
+}
+
 class _SourceChip extends StatelessWidget {
   const _SourceChip({
     required this.source,
@@ -418,6 +504,60 @@ class _SourceChip extends StatelessWidget {
   });
 
   final _DropSource source;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final icon = source.icon;
+    final horizontalPadding = selected ? 17.0 : 20.0;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Drop4UpTactileSurface(
+        variant: selected
+            ? Drop4UpTactileSurfaceVariant.inset
+            : Drop4UpTactileSurfaceVariant.raised,
+        color: selected
+            ? Drop4UpTokens.lightBlue.withValues(alpha: 0.36)
+            : Drop4UpTokens.cardSurface,
+        radius: Drop4UpTokens.pillRadius,
+        height: 39,
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected && icon != null) ...[
+              Icon(icon, size: 17, color: Drop4UpTokens.primaryBlue),
+              const SizedBox(width: 7),
+            ],
+            Text(
+              source.label,
+              style: textTheme.labelMedium?.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: selected
+                    ? Drop4UpTokens.textPrimary
+                    : Drop4UpTokens.textPrimary.withValues(alpha: 0.86),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ManualTagChip extends StatelessWidget {
+  const _ManualTagChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
@@ -433,31 +573,44 @@ class _SourceChip extends StatelessWidget {
             ? Drop4UpTactileSurfaceVariant.inset
             : Drop4UpTactileSurfaceVariant.raised,
         color: selected
-            ? Drop4UpTokens.lightBlue.withValues(alpha: 0.36)
-            : Drop4UpTokens.cardSurface,
+            ? Drop4UpTokens.lightBlue.withValues(alpha: 0.24)
+            : Drop4UpTokens.cardSurface.withValues(alpha: 0.94),
         radius: Drop4UpTokens.pillRadius,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              source.icon,
-              size: 18,
-              color: selected
-                  ? Drop4UpTokens.primaryBlue
-                  : Drop4UpTokens.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              source.label,
-              style: textTheme.labelMedium?.copyWith(
-                fontSize: 14,
-                color: selected
-                    ? Drop4UpTokens.textPrimary
-                    : Drop4UpTokens.textPrimary.withValues(alpha: 0.88),
-              ),
-            ),
-          ],
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          label,
+          style: textTheme.labelMedium?.copyWith(
+            fontSize: 12,
+            color: selected
+                ? Drop4UpTokens.primaryBlue
+                : Drop4UpTokens.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddTagChip extends StatelessWidget {
+  const _AddTagChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Drop4UpTactileSurface(
+        variant: Drop4UpTactileSurfaceVariant.raised,
+        color: Drop4UpTokens.cardSurface.withValues(alpha: 0.92),
+        radius: Drop4UpTokens.pillRadius,
+        width: 32,
+        height: 30,
+        child: const Icon(
+          Icons.add_rounded,
+          size: 18,
+          color: Drop4UpTokens.textSecondary,
         ),
       ),
     );
@@ -466,7 +619,8 @@ class _SourceChip extends StatelessWidget {
 
 class _DropSource {
   const _DropSource(this.label, this.icon);
+  const _DropSource.material(this.label, this.icon);
 
   final String label;
-  final IconData icon;
+  final IconData? icon;
 }

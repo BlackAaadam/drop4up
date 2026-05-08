@@ -87,6 +87,33 @@ void main() {
     expect(entry.text, text);
     expect(entry.text.codeUnits, text.codeUnits);
   });
+
+  testWidgets('Drop layout saves selected manual tags without label clutter', (
+    tester,
+  ) async {
+    final harness = await _pumpHarness(tester);
+    const text = '  平安仍然同在。\n不要改寫這一句。  ';
+
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+
+    expect(find.text('來源'), findsNothing);
+    expect(find.text('可選附件'), findsNothing);
+    expect(find.text('#平安'), findsOneWidget);
+    expect(find.text('#信心'), findsOneWidget);
+    expect(find.text('#感恩'), findsOneWidget);
+    expect(find.text('#愛'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('drop_text_input')), text);
+    await tester.tap(find.text('#平安'));
+    await tester.tap(find.byKey(const Key('save_drop_button')));
+    await _pumpUi(tester);
+
+    final entry = (await harness.repository.load()).entries.single;
+
+    expect(entry.text, text);
+    expect(entry.tags, const ['平安']);
+  });
 }
 
 Future<_Harness> _pumpHarness(WidgetTester tester) async {
