@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'data/reflection_entry_repository.dart';
+import 'data/profile_backup_file_service.dart';
 import 'screens/drop_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal_screen.dart';
@@ -21,11 +22,13 @@ class Drop4UpPreviewApp extends StatefulWidget {
   const Drop4UpPreviewApp({
     super.key,
     this.repository,
+    this.profileBackupFileService,
     this.clock,
     this.idGenerator,
   });
 
   final ReflectionEntryRepository? repository;
+  final ProfileBackupFileService? profileBackupFileService;
   final ReflectionClock? clock;
   final ReflectionIdGenerator? idGenerator;
 
@@ -73,14 +76,18 @@ class _Drop4UpPreviewAppState extends State<Drop4UpPreviewApp> {
             surface: Drop4UpTokens.cardSurface,
           ),
         ),
-        home: const ShellPreviewScreen(),
+        home: ShellPreviewScreen(
+          profileBackupFileService: widget.profileBackupFileService,
+        ),
       ),
     );
   }
 }
 
 class ShellPreviewScreen extends StatefulWidget {
-  const ShellPreviewScreen({super.key});
+  const ShellPreviewScreen({super.key, this.profileBackupFileService});
+
+  final ProfileBackupFileService? profileBackupFileService;
 
   @override
   State<ShellPreviewScreen> createState() => _ShellPreviewScreenState();
@@ -114,7 +121,7 @@ class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
           initialTaxonomyFilter: _initialJournalFilter,
           onInitialFilterConsumed: _clearInitialJournalFilter,
         ),
-        3 => const ProfileScreen(),
+        3 => ProfileScreen(backupFileService: widget.profileBackupFileService),
         _ => _ShellPlaceholder(tab: tab),
       },
     );

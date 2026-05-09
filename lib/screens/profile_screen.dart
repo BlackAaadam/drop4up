@@ -1,8 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import '../data/profile_backup_file_service.dart';
 import '../data/reflection_entry.dart';
 import '../data/reflection_entry_document.dart';
 import '../state/reflection_entries_scope.dart';
@@ -18,7 +16,7 @@ const _profileActions = [
   _ProfileAction(
     kind: _ProfileActionKind.backup,
     title: '備份資料',
-    subtitle: '複製目前的本機 prototype 資料。',
+    subtitle: '儲存一份本機備份檔。',
     icon: Icons.file_download_outlined,
   ),
   _ProfileAction(
@@ -42,7 +40,10 @@ const _profileActions = [
 ];
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  ProfileScreen({super.key, ProfileBackupFileService? backupFileService})
+    : backupFileService = backupFileService ?? ProfileBackupFileService();
+
+  final ProfileBackupFileService backupFileService;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +91,7 @@ class ProfileScreen extends StatelessWidget {
         for (final action in _profileActions) ...[
           _ProfileActionRow(
             action: action,
-            onTap: () => _handleAction(context, action.kind),
+            onTap: () => _handleAction(context, action.kind, backupFileService),
           ),
           if (action != _profileActions.last) const SizedBox(height: 8),
         ],
@@ -101,12 +102,16 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-void _handleAction(BuildContext context, _ProfileActionKind kind) {
+void _handleAction(
+  BuildContext context,
+  _ProfileActionKind kind,
+  ProfileBackupFileService backupFileService,
+) {
   switch (kind) {
     case _ProfileActionKind.backup:
-      _showBackupSheet(context);
+      _showBackupSheet(context, backupFileService);
     case _ProfileActionKind.restore:
-      _showRestoreSheet(context);
+      _showRestoreSheet(context, backupFileService);
     case _ProfileActionKind.preferences:
       _showPreferencesSheet(context);
     case _ProfileActionKind.about:
@@ -385,68 +390,27 @@ class _ProfileAction {
   final IconData icon;
 }
 
-Future<void> _showBackupSheet(BuildContext context) async {
-  final controller = ReflectionEntriesScope.read(context);
-  final jsonText = const JsonEncoder.withIndent(
-    '  ',
-  ).convert(controller.exportDocument().toJson());
-
+Future<void> _showBackupSheet(
+  BuildContext context,
+  ProfileBackupFileService backupFileService,
+) async {
   await _showProfileSheet(
     context,
     title: '備份資料',
     icon: Icons.file_download_outlined,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '複製這份本機備份，保存在你信任的位置。',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Drop4UpTokens.textSecondary),
-        ),
-        const SizedBox(height: 14),
-        _JsonPreview(text: jsonText),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _QuietSheetButton(
-                label: '關閉',
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ),
-            const SizedBox(width: 10),
-            SizedBox(
-              width: 142,
-              child: PrimaryDropButton(
-                label: '複製',
-                icon: Icons.content_copy_rounded,
-                onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: jsonText));
-                  if (!context.mounted) {
-                    return;
-                  }
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('備份資料已複製。')));
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
+    child: _BackupFileForm(backupFileService: backupFileService),
   );
 }
 
-Future<void> _showRestoreSheet(BuildContext context) async {
+Future<void> _showRestoreSheet(
+  BuildContext context,
+  ProfileBackupFileService backupFileService,
+) async {
   await _showProfileSheet(
     context,
     title: '還原資料',
     icon: Icons.file_upload_outlined,
-    child: const _RestoreJsonForm(),
+    child: _RestoreDataForm(backupFileService: backupFileService),
   );
 }
 
@@ -532,17 +496,140 @@ Future<void> _showProfileSheet(
   );
 }
 
-class _RestoreJsonForm extends StatefulWidget {
-  const _RestoreJsonForm();
+class _BackupFileForm extends StatefulWidget {
+  const _BackupFileForm({required this.backupFileService});
+
+  final ProfileBackupFileService backupFileService;
 
   @override
-  State<_RestoreJsonForm> createState() => _RestoreJsonFormState();
+  State<_BackupFileForm> createState() => _BackupFileFormState();
 }
 
-class _RestoreJsonFormState extends State<_RestoreJsonForm> {
+class _BackupFileFormState extends State<_BackupFileForm> {
+  bool _isSaving = false;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '建立一份 Drop4Up 備份檔，可儲存到手機檔案、雲端硬碟，或分享給自己。資料內容只來自此裝置。',
+          style: textTheme.bodyMedium?.copyWith(
+            color: Drop4UpTokens.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Drop4UpTactileSurface(
+          variant: Drop4UpTactileSurfaceVariant.inset,
+          radius: 22,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          color: Drop4UpTokens.cardSurface,
+          child: Row(
+            children: [
+              const Icon(
+                Icons.insert_drive_file_outlined,
+                size: 22,
+                color: Drop4UpTokens.primaryBlue,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '檔名會以 Drop4Up_Backup 開頭，方便之後找回。',
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontSize: 13.5,
+                    color: Drop4UpTokens.textSecondary,
+                    height: 1.32,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            _error!,
+            key: const Key('profile_backup_file_error'),
+            style: textTheme.labelMedium?.copyWith(
+              color: Drop4UpTokens.textPrimary,
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _QuietSheetButton(
+                label: '取消',
+                onTap: _isSaving ? null : () => Navigator.of(context).pop(),
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 178,
+              child: PrimaryDropButton(
+                key: const Key('profile_backup_file_button'),
+                label: _isSaving ? '建立中' : '儲存備份檔',
+                icon: Icons.ios_share_rounded,
+                onTap: _isSaving ? () {} : _saveBackupFile,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _saveBackupFile() async {
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+
+    try {
+      final document = ReflectionEntriesScope.read(context).exportDocument();
+      final backupFile = await widget.backupFileService.writeAndShareBackup(
+        document,
+      );
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('備份檔已建立：${backupFile.fileName}')));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '目前無法建立備份檔，請稍後再試。';
+        _isSaving = false;
+      });
+    }
+  }
+}
+
+class _RestoreDataForm extends StatefulWidget {
+  const _RestoreDataForm({required this.backupFileService});
+
+  final ProfileBackupFileService backupFileService;
+
+  @override
+  State<_RestoreDataForm> createState() => _RestoreDataFormState();
+}
+
+class _RestoreDataFormState extends State<_RestoreDataForm> {
   final TextEditingController _controller = TextEditingController();
   String? _error;
   bool _isRestoring = false;
+  bool _isPickingFile = false;
+  ReflectionEntryDocument? _pendingFileDocument;
 
   @override
   void dispose() {
@@ -559,12 +646,23 @@ class _RestoreJsonFormState extends State<_RestoreJsonForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '貼上 Drop4Up 備份資料。還原會取代此裝置上的本機 prototype 紀錄。',
+          '選擇一份 Drop4Up 備份檔，或貼上備份資料。還原會取代此裝置上的本機 prototype 紀錄。',
           style: textTheme.bodyMedium?.copyWith(
             color: Drop4UpTokens.textSecondary,
           ),
         ),
         const SizedBox(height: 14),
+        PrimaryDropButton(
+          key: const Key('profile_restore_file_button'),
+          label: _isPickingFile ? '選擇中' : '選擇備份檔',
+          icon: Icons.folder_open_rounded,
+          onTap: _isPickingFile || _isRestoring ? () {} : _restoreFromFile,
+        ),
+        if (_pendingFileDocument != null) ...[
+          const SizedBox(height: 12),
+          _RestorePreviewCard(document: _pendingFileDocument!),
+        ],
+        const SizedBox(height: 12),
         Drop4UpTactileSurface(
           variant: Drop4UpTactileSurfaceVariant.inset,
           radius: 24,
@@ -615,9 +713,18 @@ class _RestoreJsonFormState extends State<_RestoreJsonForm> {
             SizedBox(
               width: 150,
               child: PrimaryDropButton(
-                label: _isRestoring ? '還原中' : '還原',
+                key: const Key('profile_restore_confirm_button'),
+                label: _isRestoring
+                    ? '還原中'
+                    : _pendingFileDocument == null
+                    ? '還原'
+                    : '確認還原',
                 icon: Icons.restore_rounded,
-                onTap: _isRestoring ? () {} : _restore,
+                onTap: _isRestoring
+                    ? () {}
+                    : _pendingFileDocument == null
+                    ? _restore
+                    : _confirmFileRestore,
               ),
             ),
           ],
@@ -630,24 +737,12 @@ class _RestoreJsonFormState extends State<_RestoreJsonForm> {
     setState(() {
       _error = null;
       _isRestoring = true;
+      _pendingFileDocument = null;
     });
 
     try {
-      final decoded = jsonDecode(_controller.text);
-      if (decoded is! Map) {
-        throw const FormatException('Backup JSON must be an object.');
-      }
-      final document = ReflectionEntryDocument.fromJson(
-        decoded.cast<String, Object?>(),
-      );
-      await ReflectionEntriesScope.read(context).restoreDocument(document);
-      if (!mounted) {
-        return;
-      }
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('本機紀錄已還原。')));
+      final document = parseProfileBackupDocumentText(_controller.text);
+      await _restoreDocument(document, '本機紀錄已還原。');
     } catch (_) {
       if (!mounted) {
         return;
@@ -658,36 +753,124 @@ class _RestoreJsonFormState extends State<_RestoreJsonForm> {
       });
     }
   }
+
+  Future<void> _restoreFromFile() async {
+    setState(() {
+      _error = null;
+      _isPickingFile = true;
+      _pendingFileDocument = null;
+    });
+
+    try {
+      final document = await widget.backupFileService.pickRestoreDocument();
+      if (!mounted) {
+        return;
+      }
+      if (document == null) {
+        setState(() => _isPickingFile = false);
+        return;
+      }
+      setState(() {
+        _pendingFileDocument = document;
+        _isPickingFile = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '這看起來不是有效的 Drop4Up 備份檔。';
+        _isPickingFile = false;
+      });
+    }
+  }
+
+  Future<void> _confirmFileRestore() async {
+    final document = _pendingFileDocument;
+    if (document == null) {
+      return;
+    }
+    setState(() {
+      _error = null;
+      _isRestoring = true;
+    });
+
+    try {
+      await _restoreDocument(document, '本機紀錄已從備份檔還原。');
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '目前無法還原這份備份檔，請稍後再試。';
+        _isRestoring = false;
+      });
+    }
+  }
+
+  Future<void> _restoreDocument(
+    ReflectionEntryDocument document,
+    String successMessage,
+  ) async {
+    await ReflectionEntriesScope.read(context).restoreDocument(document);
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(successMessage)));
+  }
 }
 
-class _JsonPreview extends StatelessWidget {
-  const _JsonPreview({required this.text});
+class _RestorePreviewCard extends StatelessWidget {
+  const _RestorePreviewCard({required this.document});
 
-  final String text;
+  final ReflectionEntryDocument document;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final firstEntry = document.entries.isEmpty ? null : document.entries.first;
 
     return Drop4UpTactileSurface(
       variant: Drop4UpTactileSurfaceVariant.inset,
-      radius: 24,
-      padding: const EdgeInsets.all(14),
+      radius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       color: Drop4UpTokens.cardSurface,
-      child: SizedBox(
-        height: 210,
-        child: SingleChildScrollView(
-          child: SelectableText(
-            text,
-            key: const Key('profile_backup_json_text'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '還原前預覽',
+            style: textTheme.labelLarge?.copyWith(
+              color: Drop4UpTokens.primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            '將還原 ${document.entries.length} 筆紀錄。請先確認下面文字不是亂碼。',
+            key: const Key('profile_restore_preview_count'),
             style: textTheme.bodyMedium?.copyWith(
-              color: Drop4UpTokens.textPrimary,
-              fontFamily: 'monospace',
-              fontSize: 12.5,
+              fontSize: 13.5,
+              color: Drop4UpTokens.textSecondary,
               height: 1.34,
             ),
           ),
-        ),
+          if (firstEntry != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              firstEntry.text,
+              key: const Key('profile_restore_preview_text'),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodyMedium?.copyWith(
+                color: Drop4UpTokens.textPrimary,
+                height: 1.36,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

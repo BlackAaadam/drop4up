@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:drop4up/data/profile_backup_file_service.dart';
 import 'package:drop4up/data/reflection_entry.dart';
 import 'package:drop4up/data/reflection_entry_document.dart';
 import 'package:drop4up/main.dart';
@@ -38,16 +38,15 @@ void main() {
     expect(find.text('最近儲存：2026.05.08'), findsOneWidget);
   });
 
-  testWidgets('Backup dialog exposes valid JSON with exact text', (
+  testWidgets('Backup dialog offers file backup without exposing raw data', (
     tester,
   ) async {
-    const text = '  Keep this text exactly.\n\n# not a tag rewrite  ';
     await _pumpProfileHarness(
       tester,
       entries: [
         _entry(
           id: 'entry-backup',
-          text: text,
+          text: '  Keep this text exactly.\n\n# not a tag rewrite  ',
           source: '閱讀',
           tags: const ['感恩'],
         ),
@@ -57,19 +56,10 @@ void main() {
     await tester.tap(find.text('備份資料'));
     await _pumpUi(tester);
 
-    final preview = tester.widget<SelectableText>(
-      find.byKey(const Key('profile_backup_json_text')),
-    );
-    final decoded = jsonDecode(preview.data!);
-    final document = ReflectionEntryDocument.fromJson(
-      (decoded as Map).cast<String, Object?>(),
-    );
-    final entry = document.entries.single;
-
-    expect(entry.text, text);
-    expect(entry.text.codeUnits, text.codeUnits);
-    expect(entry.source, '閱讀');
-    expect(entry.tags, const ['感恩']);
+    expect(find.byKey(const Key('profile_backup_file_button')), findsOneWidget);
+    expect(find.text('儲存備份檔'), findsOneWidget);
+    expect(find.textContaining('Drop4Up_Backup'), findsOneWidget);
+    expect(find.byKey(const Key('profile_backup_json_text')), findsNothing);
   });
 
   testWidgets('Restore valid JSON replaces local entries', (tester) async {
@@ -89,6 +79,11 @@ void main() {
 
     await tester.tap(find.text('還原資料'));
     await _pumpUi(tester);
+    expect(
+      find.byKey(const Key('profile_restore_file_button')),
+      findsOneWidget,
+    );
+    expect(find.text('選擇備份檔'), findsOneWidget);
     await tester.enterText(
       find.byKey(const Key('profile_restore_json_input')),
       backupJson,
@@ -104,6 +99,38 @@ void main() {
     expect(entry.source, '禱告');
     expect(entry.tags, const ['信心']);
     expect(find.text('本機紀錄已還原。'), findsOneWidget);
+  });
+
+  testWidgets('Restore sheet exposes file entry and preserves paste restore', (
+    tester,
+  ) async {
+    const restoredText = '檔案中的中文要先看得到。';
+    final repository = await _pumpProfileHarness(
+      tester,
+      entries: [_entry(id: 'old-entry', text: 'Old local drop')],
+      backupFileService: ProfileBackupFileService(filePicker: () async => null),
+    );
+
+    await tester.tap(find.text('還原資料'));
+    await _pumpUi(tester);
+
+    expect(
+      find.byKey(const Key('profile_restore_file_button')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('profile_restore_preview_text')), findsNothing);
+    await tester.enterText(
+      find.byKey(const Key('profile_restore_json_input')),
+      _backupJson([
+        _entry(id: 'preview-entry', text: restoredText, source: '閱讀'),
+      ]),
+    );
+    await tester.tap(find.byKey(const Key('profile_restore_confirm_button')));
+    await _pumpUi(tester);
+
+    final entry = (await repository.load()).entries.single;
+    expect(entry.text, restoredText);
+    expect(entry.text.codeUnits, restoredText.codeUnits);
   });
 
   testWidgets('Restore malformed JSON shows error without overwrite', (
@@ -153,6 +180,7 @@ void main() {
 Future<TestReflectionEntryRepository> _pumpProfileHarness(
   WidgetTester tester, {
   required List<ReflectionEntry> entries,
+  ProfileBackupFileService? backupFileService,
 }) async {
   tester.view.physicalSize = const Size(393, 873);
   tester.view.devicePixelRatio = 1;
@@ -164,6 +192,7 @@ Future<TestReflectionEntryRepository> _pumpProfileHarness(
   await tester.pumpWidget(
     Drop4UpPreviewApp(
       repository: repository,
+      profileBackupFileService: backupFileService,
       clock: () => DateTime.utc(2026, 5, 9, 12),
     ),
   );
