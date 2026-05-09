@@ -90,6 +90,8 @@ class _DropEntryCard extends StatefulWidget {
   State<_DropEntryCard> createState() => _DropEntryCardState();
 }
 
+enum _DropAttachmentKind { voice, camera }
+
 class _DropEntryCardState extends State<_DropEntryCard> {
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _tagController = TextEditingController();
@@ -129,6 +131,15 @@ class _DropEntryCardState extends State<_DropEntryCard> {
     setState(() {
       _selectedTagIndices.clear();
       _statusText = '已儲存在本機。';
+    });
+  }
+
+  void _showAttachmentPlaceholder(_DropAttachmentKind kind) {
+    setState(() {
+      _statusText = switch (kind) {
+        _DropAttachmentKind.voice => '語音輸入會在之後版本接上，現在先用文字記下。',
+        _DropAttachmentKind.camera => '相機整理會在之後版本接上，現在先用文字記下。',
+      };
     });
   }
 
@@ -217,19 +228,23 @@ class _DropEntryCardState extends State<_DropEntryCard> {
           Row(
             children: [
               SoftIconButton(
+                key: const Key('drop_voice_button'),
                 icon: Icons.mic_none_rounded,
                 label: '語音',
                 size: 44,
                 iconSize: 21,
-                onTap: () {},
+                onTap: () =>
+                    _showAttachmentPlaceholder(_DropAttachmentKind.voice),
               ),
               const SizedBox(width: 10),
               SoftIconButton(
+                key: const Key('drop_camera_button'),
                 icon: Icons.photo_camera_outlined,
                 label: '相機',
                 size: 44,
                 iconSize: 21,
-                onTap: () {},
+                onTap: () =>
+                    _showAttachmentPlaceholder(_DropAttachmentKind.camera),
               ),
               const Spacer(),
               GestureDetector(

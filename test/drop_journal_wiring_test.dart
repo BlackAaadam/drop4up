@@ -139,6 +139,27 @@ void main() {
     expect(entry.text, text);
     expect(entry.tags, const ['盼望']);
   });
+
+  testWidgets('Drop attachment buttons show prototype guidance only', (
+    tester,
+  ) async {
+    final harness = await _pumpHarness(tester);
+
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+
+    await tester.tap(find.byKey(const Key('drop_voice_button')));
+    await _pumpUi(tester);
+
+    expect(find.text('語音輸入會在之後版本接上，現在先用文字記下。'), findsOneWidget);
+    expect((await harness.repository.load()).entries, isEmpty);
+
+    await tester.tap(find.byKey(const Key('drop_camera_button')));
+    await _pumpUi(tester);
+
+    expect(find.text('相機整理會在之後版本接上，現在先用文字記下。'), findsOneWidget);
+    expect((await harness.repository.load()).entries, isEmpty);
+  });
 }
 
 Future<_Harness> _pumpHarness(WidgetTester tester) async {

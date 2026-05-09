@@ -115,6 +115,66 @@ void main() {
 
     expect(find.text('平安相關的一滴。'), findsOneWidget);
     expect(find.text('2026.05.09  ·  平安'), findsOneWidget);
+    expect(find.byKey(const Key('journal_search_input')), findsNothing);
+  });
+
+  testWidgets('Home view all opens Journal with selected tag filter', (
+    tester,
+  ) async {
+    await _pumpHomeHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'peace-entry',
+          text: '平安相關的一滴。',
+          source: '講道',
+          tags: const ['平安'],
+          createdAt: DateTime.utc(2026, 5, 9, 9),
+        ),
+        _entry(
+          id: 'gratitude-entry',
+          text: '感恩相關的一滴。',
+          source: '禱告',
+          tags: const ['感恩'],
+          createdAt: DateTime.utc(2026, 5, 8, 9),
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('home_tag_平安')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('home_view_all_tags')));
+    await _pumpUi(tester);
+
+    expect(find.text('Journal'), findsWidgets);
+    expect(find.text('篩選：#平安'), findsOneWidget);
+    expect(find.text('平安相關的一滴。'), findsOneWidget);
+    expect(find.text('感恩相關的一滴。'), findsNothing);
+  });
+
+  testWidgets('Home view all opens Journal without filter when none selected', (
+    tester,
+  ) async {
+    await _pumpHomeHarness(
+      tester,
+      entries: [
+        _entry(id: 'entry-1', text: '第一滴。', tags: const ['平安']),
+        _entry(
+          id: 'entry-2',
+          text: '第二滴。',
+          tags: const ['感恩'],
+          createdAt: DateTime.utc(2026, 5, 8, 9),
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('home_view_all_tags')));
+    await _pumpUi(tester);
+
+    expect(find.text('Journal'), findsWidgets);
+    expect(find.byKey(const Key('journal_active_filter_clear')), findsNothing);
+    expect(find.text('第一滴。'), findsOneWidget);
+    expect(find.text('第二滴。'), findsOneWidget);
   });
 }
 

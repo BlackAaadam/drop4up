@@ -8,7 +8,10 @@ import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onOpenJournalAll, this.onOpenJournalTag});
+
+  final VoidCallback? onOpenJournalAll;
+  final ValueChanged<String>? onOpenJournalTag;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -69,10 +72,25 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text('探索標籤', style: textTheme.titleMedium),
             const Spacer(),
-            Text(
-              '查看全部',
-              style: textTheme.labelLarge?.copyWith(
-                color: Drop4UpTokens.primaryBlue,
+            GestureDetector(
+              key: const Key('home_view_all_tags'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                final selectedTag = _selectedTag;
+                if (selectedTag == null) {
+                  widget.onOpenJournalAll?.call();
+                } else {
+                  widget.onOpenJournalTag?.call(selectedTag);
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  '查看全部',
+                  style: textTheme.labelLarge?.copyWith(
+                    color: Drop4UpTokens.primaryBlue,
+                  ),
+                ),
               ),
             ),
           ],

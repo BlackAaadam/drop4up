@@ -88,6 +88,7 @@ class ShellPreviewScreen extends StatefulWidget {
 
 class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
   int _tabIndex = 0;
+  String? _initialJournalFilter;
 
   static const _tabs = [
     _ShellTab('Home', 'Visual reflection placeholder'),
@@ -104,13 +105,40 @@ class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
       currentIndex: _tabIndex,
       onTabChanged: (index) => setState(() => _tabIndex = index),
       body: switch (_tabIndex) {
-        0 => const HomeScreen(),
+        0 => HomeScreen(
+          onOpenJournalAll: _openJournalAll,
+          onOpenJournalTag: _openJournalTag,
+        ),
         1 => const DropScreen(),
-        2 => const JournalScreen(),
+        2 => JournalScreen(
+          initialTaxonomyFilter: _initialJournalFilter,
+          onInitialFilterConsumed: _clearInitialJournalFilter,
+        ),
         3 => const ProfileScreen(),
         _ => _ShellPlaceholder(tab: tab),
       },
     );
+  }
+
+  void _openJournalAll() {
+    setState(() {
+      _initialJournalFilter = null;
+      _tabIndex = 2;
+    });
+  }
+
+  void _openJournalTag(String tag) {
+    setState(() {
+      _initialJournalFilter = tag;
+      _tabIndex = 2;
+    });
+  }
+
+  void _clearInitialJournalFilter() {
+    if (_initialJournalFilter == null) {
+      return;
+    }
+    setState(() => _initialJournalFilter = null);
   }
 }
 

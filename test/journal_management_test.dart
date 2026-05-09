@@ -70,6 +70,66 @@ void main() {
     expect(find.text('從禱告而來。'), findsOneWidget);
   });
 
+  testWidgets('filter sheet filters favorites and can clear', (tester) async {
+    await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(id: 'favorite-entry', text: '收藏的一滴。', isFavorite: true),
+        _entry(id: 'plain-entry', text: '一般的一滴。'),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('journal_filter_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('journal_filter_favorites')));
+    await _pumpUi(tester);
+
+    expect(find.text('收藏的一滴。'), findsOneWidget);
+    expect(find.text('一般的一滴。'), findsNothing);
+    expect(find.text('篩選：收藏'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('journal_active_filter_clear')));
+    await _pumpUi(tester);
+
+    expect(find.text('收藏的一滴。'), findsOneWidget);
+    expect(find.text('一般的一滴。'), findsOneWidget);
+  });
+
+  testWidgets('filter sheet filters by source and tag', (tester) async {
+    await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'tag-entry',
+          text: '平安標籤的一滴。',
+          source: '講道',
+          tags: const ['平安'],
+        ),
+        _entry(id: 'source-entry', text: '禱告來源的一滴。', source: '禱告'),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('journal_filter_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('journal_filter_平安')));
+    await _pumpUi(tester);
+
+    expect(find.text('平安標籤的一滴。'), findsOneWidget);
+    expect(find.text('禱告來源的一滴。'), findsNothing);
+    expect(find.text('篩選：#平安'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('journal_active_filter_clear')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('journal_filter_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('journal_filter_禱告')));
+    await _pumpUi(tester);
+
+    expect(find.text('平安標籤的一滴。'), findsNothing);
+    expect(find.text('禱告來源的一滴。'), findsOneWidget);
+    expect(find.text('篩選：#禱告'), findsOneWidget);
+  });
+
   testWidgets('edit preserves exact spaces and line breaks', (tester) async {
     final repository = await _pumpJournalHarness(
       tester,

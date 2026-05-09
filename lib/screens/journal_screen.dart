@@ -9,7 +9,14 @@ import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
 class JournalScreen extends StatefulWidget {
-  const JournalScreen({super.key});
+  const JournalScreen({
+    super.key,
+    this.initialTaxonomyFilter,
+    this.onInitialFilterConsumed,
+  });
+
+  final String? initialTaxonomyFilter;
+  final VoidCallback? onInitialFilterConsumed;
 
   @override
   State<JournalScreen> createState() => _JournalScreenState();
@@ -18,6 +25,21 @@ class JournalScreen extends StatefulWidget {
 class _JournalScreenState extends State<JournalScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  _JournalFilter _filter = const _JournalFilter.all();
+
+  @override
+  void initState() {
+    super.initState();
+    _applyInitialFilter();
+  }
+
+  @override
+  void didUpdateWidget(covariant JournalScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTaxonomyFilter != widget.initialTaxonomyFilter) {
+      _applyInitialFilter();
+    }
+  }
 
   @override
   void dispose() {
@@ -25,16 +47,32 @@ class _JournalScreenState extends State<JournalScreen> {
     super.dispose();
   }
 
+  void _applyInitialFilter() {
+    final label = widget.initialTaxonomyFilter?.trim();
+    if (label == null || label.isEmpty) {
+      return;
+    }
+    _filter = _JournalFilter.taxonomy(label);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      widget.onInitialFilterConsumed?.call();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final entriesController = ReflectionEntriesScope.of(context);
     final allEntries = entriesController.entries;
-    final visibleEntries = _query.isEmpty
-        ? allEntries
-        : allEntries
-              .where((entry) => _matchesJournalQuery(entry, _query))
-              .toList();
+    final visibleEntries = allEntries
+        .where(
+          (entry) =>
+              _matchesJournalQuery(entry, _query) &&
+              _matchesJournalFilter(entry, _filter),
+        )
+        .toList();
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -53,7 +91,7 @@ class _JournalScreenState extends State<JournalScreen> {
               label: '篩選',
               size: 44,
               iconSize: 20,
-              onTap: () {},
+              onTap: () => _openFilterSheet(context, allEntries),
             ),
           ],
         ),
@@ -74,7 +112,19 @@ class _JournalScreenState extends State<JournalScreen> {
         _SearchRow(
           controller: _searchController,
           onChanged: (value) => setState(() => _query = value),
+          onFilterTap: () => _openFilterSheet(context, allEntries),
         ),
+        if (!_filter.isAll) ...[
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _ActiveJournalFilterChip(
+              filter: _filter,
+              onClear: () =>
+                  setState(() => _filter = const _JournalFilter.all()),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Row(
           children: [
@@ -107,13 +157,33 @@ class _JournalScreenState extends State<JournalScreen> {
       ],
     );
   }
+
+  Future<void> _openFilterSheet(
+    BuildContext context,
+    List<ReflectionEntry> entries,
+  ) async {
+    final filter = await _showJournalFilterSheet(
+      context,
+      entries: entries,
+      selectedFilter: _filter,
+    );
+    if (!mounted || filter == null) {
+      return;
+    }
+    setState(() => _filter = filter);
+  }
 }
 
 class _SearchRow extends StatelessWidget {
-  const _SearchRow({required this.controller, required this.onChanged});
+  const _SearchRow({
+    required this.controller,
+    required this.onChanged,
+    required this.onFilterTap,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
@@ -159,13 +229,55 @@ class _SearchRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         SoftIconButton(
+          key: const Key('journal_filter_button'),
           icon: Icons.filter_list_rounded,
           label: '篩選',
           size: 44,
           iconSize: 21,
-          onTap: () {},
+          onTap: onFilterTap,
         ),
       ],
+    );
+  }
+}
+
+class _ActiveJournalFilterChip extends StatelessWidget {
+  const _ActiveJournalFilterChip({required this.filter, required this.onClear});
+
+  final _JournalFilter filter;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return GestureDetector(
+      key: const Key('journal_active_filter_clear'),
+      behavior: HitTestBehavior.opaque,
+      onTap: onClear,
+      child: Drop4UpTactileSurface(
+        radius: Drop4UpTokens.pillRadius,
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        color: Drop4UpTokens.cardSurface.withValues(alpha: 0.94),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '篩選：${filter.displayLabel}',
+              style: textTheme.labelMedium?.copyWith(
+                fontSize: 12.5,
+                color: Drop4UpTokens.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.close_rounded,
+              size: 14,
+              color: Drop4UpTokens.textSecondary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -458,9 +570,256 @@ bool _matchesJournalQuery(ReflectionEntry entry, String query) {
       entry.tags.any((tag) => tag.contains(normalizedQuery));
 }
 
+bool _matchesJournalFilter(ReflectionEntry entry, _JournalFilter filter) {
+  return switch (filter.kind) {
+    _JournalFilterKind.all => true,
+    _JournalFilterKind.favorite => entry.isFavorite,
+    _JournalFilterKind.taxonomy =>
+      entry.source == filter.label || entry.tags.contains(filter.label),
+  };
+}
+
 String _normalizeTag(String value) {
   final trimmed = value.trim();
   return trimmed.startsWith('#') ? trimmed.substring(1).trim() : trimmed;
+}
+
+enum _JournalFilterKind { all, favorite, taxonomy }
+
+class _JournalFilter {
+  const _JournalFilter._(this.kind, this.label);
+
+  const _JournalFilter.all() : this._(_JournalFilterKind.all, null);
+  const _JournalFilter.favorite() : this._(_JournalFilterKind.favorite, null);
+  const _JournalFilter.taxonomy(String label)
+    : this._(_JournalFilterKind.taxonomy, label);
+
+  final _JournalFilterKind kind;
+  final String? label;
+
+  bool get isAll => kind == _JournalFilterKind.all;
+
+  String get displayLabel {
+    return switch (kind) {
+      _JournalFilterKind.all => '全部',
+      _JournalFilterKind.favorite => '收藏',
+      _JournalFilterKind.taxonomy => '#$label',
+    };
+  }
+
+  bool sameAs(_JournalFilter other) {
+    return kind == other.kind && label == other.label;
+  }
+}
+
+class _JournalFilterStat {
+  const _JournalFilterStat(this.label, this.count);
+
+  final String label;
+  final int count;
+}
+
+List<_JournalFilterStat> _buildJournalFilterStats(
+  List<ReflectionEntry> entries,
+) {
+  final counts = <String, int>{};
+  for (final entry in entries) {
+    if (entry.source.isNotEmpty) {
+      counts.update(entry.source, (count) => count + 1, ifAbsent: () => 1);
+    }
+    for (final tag in entry.tags) {
+      if (tag.isEmpty) {
+        continue;
+      }
+      counts.update(tag, (count) => count + 1, ifAbsent: () => 1);
+    }
+  }
+
+  final stats = [
+    for (final MapEntry(:key, :value) in counts.entries)
+      _JournalFilterStat(key, value),
+  ];
+  stats.sort((a, b) {
+    final countCompare = b.count.compareTo(a.count);
+    if (countCompare != 0) {
+      return countCompare;
+    }
+    return a.label.compareTo(b.label);
+  });
+  return stats;
+}
+
+Future<_JournalFilter?> _showJournalFilterSheet(
+  BuildContext context, {
+  required List<ReflectionEntry> entries,
+  required _JournalFilter selectedFilter,
+}) {
+  final stats = _buildJournalFilterStats(entries);
+  final favoriteCount = entries.where((entry) => entry.isFavorite).length;
+
+  return showDialog<_JournalFilter>(
+    context: context,
+    builder: (dialogContext) {
+      final textTheme = Theme.of(dialogContext).textTheme;
+
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SoftSurface(
+          variant: SoftSurfaceVariant.prominent,
+          radius: 30,
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 560),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('篩選紀錄', style: textTheme.titleMedium),
+                      ),
+                      SoftIconButton(
+                        icon: Icons.close_rounded,
+                        label: '關閉',
+                        size: 40,
+                        iconSize: 20,
+                        onTap: () => Navigator.of(dialogContext).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _JournalFilterOptionChip(
+                        key: const Key('journal_filter_all'),
+                        label: '全部',
+                        count: entries.length,
+                        selected: selectedFilter.sameAs(
+                          const _JournalFilter.all(),
+                        ),
+                        onTap: () => Navigator.of(
+                          dialogContext,
+                        ).pop(const _JournalFilter.all()),
+                      ),
+                      _JournalFilterOptionChip(
+                        key: const Key('journal_filter_favorites'),
+                        label: '收藏',
+                        count: favoriteCount,
+                        selected: selectedFilter.sameAs(
+                          const _JournalFilter.favorite(),
+                        ),
+                        onTap: () => Navigator.of(
+                          dialogContext,
+                        ).pop(const _JournalFilter.favorite()),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    '來源與標籤',
+                    style: textTheme.labelLarge?.copyWith(
+                      color: Drop4UpTokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (stats.isEmpty)
+                    Text(
+                      '還沒有可篩選的來源或標籤。',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Drop4UpTokens.textSecondary,
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final stat in stats)
+                          _JournalFilterOptionChip(
+                            key: ValueKey('journal_filter_${stat.label}'),
+                            label: '#${stat.label}',
+                            count: stat.count,
+                            selected: selectedFilter.sameAs(
+                              _JournalFilter.taxonomy(stat.label),
+                            ),
+                            onTap: () => Navigator.of(
+                              dialogContext,
+                            ).pop(_JournalFilter.taxonomy(stat.label)),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _JournalFilterOptionChip extends StatelessWidget {
+  const _JournalFilterOptionChip({
+    super.key,
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Drop4UpTactileSurface(
+        variant: selected
+            ? Drop4UpTactileSurfaceVariant.inset
+            : Drop4UpTactileSurfaceVariant.raised,
+        radius: Drop4UpTokens.pillRadius,
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        color: selected
+            ? Drop4UpTokens.lightBlue.withValues(alpha: 0.28)
+            : Drop4UpTokens.cardSurface.withValues(alpha: 0.94),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: textTheme.labelMedium?.copyWith(
+                fontSize: 13,
+                color: selected
+                    ? Drop4UpTokens.primaryBlue
+                    : Drop4UpTokens.textPrimary.withValues(alpha: 0.82),
+              ),
+            ),
+            const SizedBox(width: 7),
+            Text(
+              '$count',
+              style: textTheme.labelMedium?.copyWith(
+                fontSize: 12,
+                color: selected
+                    ? Drop4UpTokens.primaryBlue.withValues(alpha: 0.76)
+                    : Drop4UpTokens.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DialogAction extends StatelessWidget {
