@@ -90,18 +90,20 @@ class _JournalScreenState extends State<JournalScreen> {
         ),
         const SizedBox(height: 9),
         if (!entriesController.isLoaded)
-          const _JournalStateCard(message: '正在載入 drops...')
+          const _JournalStateCard(message: '正在載入紀錄...')
         else if (allEntries.isEmpty)
-          const _JournalStateCard(message: '還沒有儲存的 drops。')
+          const _JournalStateCard(message: '還沒有儲存的紀錄。')
         else if (visibleEntries.isEmpty)
-          const _JournalStateCard(message: '找不到符合的 drops。')
+          const _JournalStateCard(message: '找不到符合的紀錄。')
         else
           for (final entry in visibleEntries) ...[
             _JournalEntryCard(entry: entry),
             if (entry != visibleEntries.last) const SizedBox(height: 9),
           ],
         const SizedBox(height: 11),
-        const _CreateVisualCardButton(),
+        _CreateVisualCardButton(
+          entry: visibleEntries.isEmpty ? null : visibleEntries.first,
+        ),
       ],
     );
   }
@@ -142,7 +144,7 @@ class _SearchRow extends StatelessWidget {
                       border: InputBorder.none,
                       counterText: '',
                       isCollapsed: true,
-                      hintText: '搜尋 drops',
+                      hintText: '搜尋每一滴',
                       hintStyle: textTheme.bodyMedium?.copyWith(
                         color: Drop4UpTokens.textSecondary,
                       ),
@@ -837,40 +839,265 @@ class _MiniTag extends StatelessWidget {
 }
 
 class _CreateVisualCardButton extends StatelessWidget {
-  const _CreateVisualCardButton();
+  const _CreateVisualCardButton({required this.entry});
+
+  final ReflectionEntry? entry;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Drop4UpTactileSurface(
-      variant: Drop4UpTactileSurfaceVariant.primaryRaised,
-      height: 52,
-      radius: 22,
-      color: Drop4UpTokens.primaryBlue,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.image_outlined,
-            size: 20,
-            color: Drop4UpTokens.softWhite,
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              'Create Visual Card',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.titleMedium?.copyWith(
-                fontSize: 16,
+    return Semantics(
+      button: true,
+      label: '建立視覺卡片',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _showVisualCardPreview(context, entry),
+        child: Drop4UpTactileSurface(
+          variant: Drop4UpTactileSurfaceVariant.primaryRaised,
+          height: 52,
+          radius: 22,
+          color: Drop4UpTokens.primaryBlue,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.image_outlined,
+                size: 20,
                 color: Drop4UpTokens.softWhite,
-                fontWeight: FontWeight.w500,
               ),
-            ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '建立視覺卡片',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontSize: 16,
+                    color: Drop4UpTokens.softWhite,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+}
+
+Future<void> _showVisualCardPreview(
+  BuildContext context,
+  ReflectionEntry? entry,
+) {
+  return showDialog<void>(
+    context: context,
+    builder: (dialogContext) {
+      final textTheme = Theme.of(dialogContext).textTheme;
+
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SoftSurface(
+          variant: SoftSurfaceVariant.prominent,
+          radius: 30,
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text('視覺卡片預覽', style: textTheme.titleMedium)),
+                  SoftIconButton(
+                    icon: Icons.close_rounded,
+                    label: '關閉',
+                    size: 40,
+                    iconSize: 20,
+                    onTap: () => Navigator.of(dialogContext).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              if (entry == null)
+                Text(
+                  '先在 Drop 記下一滴，就能在這裡預覽視覺卡片。',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: Drop4UpTokens.textSecondary,
+                  ),
+                )
+              else
+                _VisualCardPreview(entry: entry),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: 132,
+                  child: _DialogAction(
+                    label: '完成',
+                    icon: Icons.check_rounded,
+                    onTap: () => Navigator.of(dialogContext).pop(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _VisualCardPreview extends StatelessWidget {
+  const _VisualCardPreview({required this.entry});
+
+  final ReflectionEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final tags = [
+      if (entry.source.isNotEmpty) entry.source,
+      ...entry.tags,
+    ].take(3).toList();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: SizedBox(
+        key: const Key('visual_card_preview'),
+        width: double.infinity,
+        height: 236,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFBFBFA),
+                    Color(0xFFF2F6F7),
+                    Color(0xFFE4EEF5),
+                    Color(0xFFD1E0EC),
+                  ],
+                ),
+              ),
+            ),
+            CustomPaint(painter: _VisualCardPainter()),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Drop4Up',
+                    style: textTheme.labelLarge?.copyWith(
+                      color: Drop4UpTokens.primaryBlue,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    entry.text,
+                    key: const Key('visual_card_preview_text'),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: Drop4UpTokens.textPrimary,
+                      height: 1.34,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: [
+                      Text(
+                        _formatEntryDate(entry.createdAt),
+                        style: textTheme.labelMedium?.copyWith(
+                          color: Drop4UpTokens.textSecondary,
+                        ),
+                      ),
+                      for (final tag in tags) _VisualCardTag(label: '#$tag'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VisualCardTag extends StatelessWidget {
+  const _VisualCardTag({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Drop4UpTokens.pillRadius),
+        color: Drop4UpTokens.cardSurface.withValues(alpha: 0.72),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: textTheme.labelMedium?.copyWith(
+            fontSize: 12,
+            color: Drop4UpTokens.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VisualCardPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final mist = Paint()
+      ..color = Drop4UpTokens.softWhite.withValues(alpha: 0.36)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.72, size.height * 0.24),
+        width: size.width * 0.62,
+        height: 76,
+      ),
+      mist,
+    );
+
+    final line = Paint()
+      ..color = Drop4UpTokens.primaryBlue.withValues(alpha: 0.15)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(size.width * 0.08, size.height * 0.70)
+      ..quadraticBezierTo(
+        size.width * 0.32,
+        size.height * 0.58,
+        size.width * 0.50,
+        size.height * 0.69,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.72,
+        size.height * 0.82,
+        size.width * 0.92,
+        size.height * 0.64,
+      );
+    canvas.drawPath(path, line);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -43,7 +43,7 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text(text), findsOneWidget);
-    expect(find.text('還沒有儲存的 drops。'), findsNothing);
+    expect(find.text('還沒有儲存的紀錄。'), findsNothing);
   });
 
   testWidgets('app reload loads entries from repository', (tester) async {

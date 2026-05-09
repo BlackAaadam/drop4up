@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
 
+import '../data/reflection_entry.dart';
+import '../state/reflection_entries_scope.dart';
 import '../ui/drop4up_tag_chip.dart';
 import '../ui/drop4up_tokens.dart';
 import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  static const _tags = [
-    _HomeTag('恩典', 24, true),
-    _HomeTag('禱告', 18, false),
-    _HomeTag('平安', 16, false),
-    _HomeTag('信心', 14, false),
-    _HomeTag('盼望', 12, false),
-    _HomeTag('愛', 10, false),
-    _HomeTag('信靠', 9, false),
-    _HomeTag('智慧', 7, false),
-  ];
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String? _selectedTag;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final entries = ReflectionEntriesScope.of(context).entries;
+    final tags = _buildHomeTags(entries);
+    final selectedEntry = _selectReflectionEntry(entries, _selectedTag);
+
+    if (_selectedTag != null && !tags.any((tag) => tag.label == _selectedTag)) {
+      _selectedTag = null;
+    }
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -58,11 +63,11 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        const _ReflectionCard(),
+        _ReflectionCard(entry: selectedEntry, selectedTag: _selectedTag),
         const SizedBox(height: 18),
         Row(
           children: [
-            Text('Explore Tags', style: textTheme.titleMedium),
+            Text('探索標籤', style: textTheme.titleMedium),
             const Spacer(),
             Text(
               '查看全部',
@@ -77,12 +82,17 @@ class HomeScreen extends StatelessWidget {
           spacing: 8,
           runSpacing: 10,
           children: [
-            for (final tag in _tags.take(6))
+            for (final tag in tags.take(6))
               Drop4UpTagChip(
+                key: ValueKey('home_tag_${tag.label}'),
                 label: tag.label,
                 count: tag.count,
-                selected: tag.selected,
-                onTap: () {},
+                selected: tag.label == _selectedTag,
+                onTap: () {
+                  setState(() {
+                    _selectedTag = _selectedTag == tag.label ? null : tag.label;
+                  });
+                },
               ),
           ],
         ),
@@ -92,7 +102,10 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _ReflectionCard extends StatelessWidget {
-  const _ReflectionCard();
+  const _ReflectionCard({required this.entry, required this.selectedTag});
+
+  final ReflectionEntry? entry;
+  final String? selectedTag;
 
   @override
   Widget build(BuildContext context) {
@@ -116,15 +129,15 @@ class _ReflectionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const _SoftReflectionCanvas(),
+          _SoftReflectionCanvas(entry: entry, selectedTag: selectedTag),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: const [
               _PageDot(active: true),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               _PageDot(active: false),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               _PageDot(active: false),
             ],
           ),
@@ -135,13 +148,21 @@ class _ReflectionCard extends StatelessWidget {
 }
 
 class _SoftReflectionCanvas extends StatelessWidget {
-  const _SoftReflectionCanvas();
+  const _SoftReflectionCanvas({required this.entry, required this.selectedTag});
+
+  final ReflectionEntry? entry;
+  final String? selectedTag;
 
   static const _radius = 26.0;
+  static const _fallbackText = '還沒有儲存的紀錄。\n一句也可以，慢慢記下。';
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final displayText = entry?.text ?? _fallbackText;
+    final meta = entry == null
+        ? '今天  ·  安靜'
+        : '${_formatEntryDate(entry!.createdAt)}  ·  ${_entryMeta(entry!, selectedTag)}';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(_radius),
@@ -174,7 +195,10 @@ class _SoftReflectionCanvas extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '祂的平安保守我的心。',
+                    displayText,
+                    key: const Key('home_reflection_text'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.titleLarge?.copyWith(
                       color: Drop4UpTokens.textPrimary,
                       height: 1.26,
@@ -182,7 +206,10 @@ class _SoftReflectionCanvas extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '2025.04.18  ·  平安',
+                    meta,
+                    key: const Key('home_reflection_meta'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.labelMedium?.copyWith(
                       color: Drop4UpTokens.textSecondary,
                     ),
@@ -490,10 +517,98 @@ class _PageDot extends StatelessWidget {
   }
 }
 
-class _HomeTag {
-  const _HomeTag(this.label, this.count, this.selected);
+class _HomeTagStat {
+  const _HomeTagStat(this.label, this.count);
 
   final String label;
-  final int count;
-  final bool selected;
+  final int? count;
 }
+
+const _suggestedHomeTags = [
+  _HomeTagStat('恩典', null),
+  _HomeTagStat('禱告', null),
+  _HomeTagStat('平安', null),
+  _HomeTagStat('信心', null),
+  _HomeTagStat('盼望', null),
+  _HomeTagStat('愛', null),
+];
+
+List<_HomeTagStat> _buildHomeTags(List<ReflectionEntry> entries) {
+  if (entries.isEmpty) {
+    return _suggestedHomeTags;
+  }
+
+  final counts = <String, int>{};
+  for (final entry in entries) {
+    if (entry.source.isNotEmpty) {
+      counts.update(entry.source, (count) => count + 1, ifAbsent: () => 1);
+    }
+    for (final tag in entry.tags) {
+      if (tag.isEmpty) {
+        continue;
+      }
+      counts.update(tag, (count) => count + 1, ifAbsent: () => 1);
+    }
+  }
+
+  final stats = [
+    for (final MapEntry(:key, :value) in counts.entries)
+      _HomeTagStat(key, value),
+  ];
+  stats.sort((a, b) {
+    final countCompare = (b.count ?? 0).compareTo(a.count ?? 0);
+    if (countCompare != 0) {
+      return countCompare;
+    }
+    return a.label.compareTo(b.label);
+  });
+  return stats.take(6).toList();
+}
+
+ReflectionEntry? _selectReflectionEntry(
+  List<ReflectionEntry> entries,
+  String? selectedTag,
+) {
+  if (entries.isEmpty) {
+    return null;
+  }
+
+  final candidates = selectedTag == null
+      ? entries
+      : entries
+            .where(
+              (entry) =>
+                  entry.source == selectedTag ||
+                  entry.tags.contains(selectedTag),
+            )
+            .toList();
+  final source = candidates.isEmpty ? entries : candidates;
+
+  for (final entry in source) {
+    if (entry.isFavorite) {
+      return entry;
+    }
+  }
+  return source.first;
+}
+
+String _entryMeta(ReflectionEntry entry, String? selectedTag) {
+  if (selectedTag != null &&
+      (entry.source == selectedTag || entry.tags.contains(selectedTag))) {
+    return selectedTag;
+  }
+  if (entry.tags.isNotEmpty) {
+    return entry.tags.first;
+  }
+  if (entry.source.isNotEmpty) {
+    return entry.source;
+  }
+  return '回望';
+}
+
+String _formatEntryDate(DateTime date) {
+  final local = date.toLocal();
+  return '${local.year}.${_twoDigits(local.month)}.${_twoDigits(local.day)}';
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');

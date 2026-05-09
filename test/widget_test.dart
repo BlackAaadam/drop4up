@@ -18,7 +18,7 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text('Drop4Up'), findsOneWidget);
-    expect(find.text('Explore Tags'), findsOneWidget);
+    expect(find.text('探索標籤'), findsOneWidget);
     expect(find.text('Home shell preview'), findsNothing);
 
     await tester.tap(find.text('Drop'));
@@ -33,8 +33,8 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text('Journal'), findsWidgets);
-    expect(find.text('還沒有儲存的 drops。'), findsOneWidget);
-    expect(find.text('Create Visual Card'), findsOneWidget);
+    expect(find.text('還沒有儲存的紀錄。'), findsOneWidget);
+    expect(find.text('建立視覺卡片'), findsOneWidget);
     expect(find.text('Journal shell preview'), findsNothing);
 
     await tester.tap(find.text('Profile'));

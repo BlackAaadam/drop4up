@@ -13,7 +13,7 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text('在安靜裡尋見平安。'), findsOneWidget);
-    expect(find.text('找不到符合的 drops。'), findsNothing);
+    expect(find.text('找不到符合的紀錄。'), findsNothing);
   });
 
   testWidgets('empty search shows all entries', (tester) async {
@@ -39,7 +39,7 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text('只留下安靜。'), findsNothing);
-    expect(find.text('找不到符合的 drops。'), findsOneWidget);
+    expect(find.text('找不到符合的紀錄。'), findsOneWidget);
   });
 
   testWidgets('hashtag search matches tags and source', (tester) async {
@@ -134,6 +134,62 @@ void main() {
     expect(entry.tags, const ['信心']);
   });
 
+  testWidgets('visual card preview uses first visible entry exactly', (
+    tester,
+  ) async {
+    const previewText = '  建立卡片時，也要保留這一滴原文。\n第二行也保留。  ';
+    await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'entry-preview',
+          text: previewText,
+          source: '閱讀',
+          tags: const ['愛'],
+          createdAt: DateTime.utc(2026, 5, 9, 8),
+        ),
+        _entry(
+          id: 'entry-other',
+          text: '另一滴。',
+          source: '禱告',
+          createdAt: DateTime.utc(2026, 5, 7, 8),
+        ),
+      ],
+    );
+
+    await tester.tap(find.text('建立視覺卡片'));
+    await _pumpUi(tester);
+
+    final preview = tester.widget<Text>(
+      find.byKey(const Key('visual_card_preview_text')),
+    );
+
+    expect(find.text('視覺卡片預覽'), findsOneWidget);
+    expect(preview.data, previewText);
+    expect(preview.data!.codeUnits, previewText.codeUnits);
+    final previewCard = find.byKey(const Key('visual_card_preview'));
+    expect(
+      find.descendant(of: previewCard, matching: find.text('#閱讀')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: previewCard, matching: find.text('#愛')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('visual card preview has empty guidance without entries', (
+    tester,
+  ) async {
+    await _pumpJournalHarness(tester, entries: const []);
+
+    await tester.tap(find.text('建立視覺卡片'));
+    await _pumpUi(tester);
+
+    expect(find.text('視覺卡片預覽'), findsOneWidget);
+    expect(find.text('先在 Drop 記下一滴，就能在這裡預覽視覺卡片。'), findsOneWidget);
+  });
+
   testWidgets('favorite persists after reload', (tester) async {
     final repository = await _pumpJournalHarness(
       tester,
@@ -170,7 +226,7 @@ void main() {
 
     expect((await repository.load()).entries, isEmpty);
     expect(find.text('準備刪除。'), findsNothing);
-    expect(find.text('還沒有儲存的 drops。'), findsOneWidget);
+    expect(find.text('還沒有儲存的紀錄。'), findsOneWidget);
   });
 }
 
@@ -202,15 +258,17 @@ ReflectionEntry _entry({
   required String text,
   String source = '講道',
   List<String> tags = const [],
+  DateTime? createdAt,
   bool isFavorite = false,
 }) {
+  final timestamp = createdAt ?? DateTime.utc(2026, 5, 7, 8);
   return ReflectionEntry(
     id: id,
     text: text,
     source: source,
     tags: tags,
-    createdAt: DateTime.utc(2026, 5, 7, 8),
-    updatedAt: DateTime.utc(2026, 5, 7, 8),
+    createdAt: timestamp,
+    updatedAt: timestamp,
     isFavorite: isFavorite,
   );
 }
