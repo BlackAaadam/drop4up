@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../data/reflection_entry.dart';
+import '../data/reflection_entry_document.dart';
 import '../data/reflection_entry_repository.dart';
 
 typedef ReflectionClock = DateTime Function();
@@ -30,6 +31,14 @@ class ReflectionEntriesController extends ChangeNotifier {
   bool get isLoaded => _isLoaded;
   bool get isSaving => _isSaving;
   Object? get error => _error;
+
+  ReflectionEntryDocument exportDocument() {
+    return ReflectionEntryDocument(
+      schemaVersion: ReflectionEntryDocument.currentSchemaVersion,
+      exportedAt: _clock().toUtc(),
+      entries: List.unmodifiable(_entries),
+    );
+  }
 
   Future<void> load() async {
     try {
@@ -91,6 +100,24 @@ class ReflectionEntriesController extends ChangeNotifier {
     );
   }
 
+  Future<void> updateEntry({
+    required String id,
+    required String text,
+    required String source,
+    required List<String> tags,
+  }) async {
+    final now = _clock().toUtc();
+    await _replaceEntry(
+      id,
+      (entry) => entry.copyWith(
+        text: text,
+        source: source,
+        tags: List.unmodifiable(tags),
+        updatedAt: now,
+      ),
+    );
+  }
+
   Future<void> toggleFavorite(String id) async {
     await _replaceEntry(
       id,
@@ -105,6 +132,11 @@ class ReflectionEntriesController extends ChangeNotifier {
       return;
     }
     await _saveWithRollback(previousEntries, nextEntries);
+  }
+
+  Future<void> restoreDocument(ReflectionEntryDocument document) async {
+    final previousEntries = _entries;
+    await _saveWithRollback(previousEntries, document.entries);
   }
 
   Future<void> _replaceEntry(

@@ -114,6 +114,31 @@ void main() {
     expect(entry.text, text);
     expect(entry.tags, const ['平安']);
   });
+
+  testWidgets('Drop plus button adds and saves a custom tag', (tester) async {
+    final harness = await _pumpHarness(tester);
+    const text = '今天交託新的標籤。';
+
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+
+    await tester.tap(find.byKey(const Key('drop_add_tag_button')));
+    await _pumpUi(tester);
+    await tester.enterText(find.byKey(const Key('drop_add_tag_input')), '#盼望');
+    await tester.tap(find.byKey(const Key('drop_add_tag_confirm_button')));
+    await _pumpUi(tester);
+
+    expect(find.text('#盼望'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('drop_text_input')), text);
+    await tester.tap(find.byKey(const Key('save_drop_button')));
+    await _pumpUi(tester);
+
+    final entry = (await harness.repository.load()).entries.single;
+
+    expect(entry.text, text);
+    expect(entry.tags, const ['盼望']);
+  });
 }
 
 Future<_Harness> _pumpHarness(WidgetTester tester) async {

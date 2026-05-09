@@ -42,6 +42,34 @@ void main() {
     expect(find.text('找不到符合的 drops。'), findsOneWidget);
   });
 
+  testWidgets('hashtag search matches tags and source', (tester) async {
+    await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(id: 'entry-tag', text: '帶著標籤的一滴。', tags: const ['平安']),
+        _entry(id: 'entry-source', text: '從禱告而來。', source: '禱告'),
+      ],
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('journal_search_input')),
+      '#平安',
+    );
+    await _pumpUi(tester);
+
+    expect(find.text('帶著標籤的一滴。'), findsOneWidget);
+    expect(find.text('從禱告而來。'), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const Key('journal_search_input')),
+      '#禱告',
+    );
+    await _pumpUi(tester);
+
+    expect(find.text('帶著標籤的一滴。'), findsNothing);
+    expect(find.text('從禱告而來。'), findsOneWidget);
+  });
+
   testWidgets('edit preserves exact spaces and line breaks', (tester) async {
     final repository = await _pumpJournalHarness(
       tester,
@@ -64,6 +92,46 @@ void main() {
     expect(entry.text.codeUnits, editedText.codeUnits);
     expect(entry.updatedAt, DateTime.utc(2026, 5, 7, 12, 30));
     expect(entry.createdAt, DateTime.utc(2026, 5, 7, 8));
+  });
+
+  testWidgets('edit updates source and tags without changing text', (
+    tester,
+  ) async {
+    final repository = await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'entry-metadata',
+          text: '  原文不改。\n阿們。  ',
+          tags: const ['平安'],
+        ),
+      ],
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('journal_entry_entry-metadata')),
+    );
+    await _pumpUi(tester);
+
+    await tester.tap(find.byKey(const ValueKey('entry_source_禱告')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('entry_tag_平安')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_add_tag_button')));
+    await _pumpUi(tester);
+    await tester.enterText(find.byKey(const Key('entry_add_tag_input')), '#信心');
+    await tester.tap(find.byKey(const Key('entry_add_tag_confirm_button')));
+    await _pumpUi(tester);
+
+    await tester.tap(find.byKey(const Key('entry_save_button')));
+    await _pumpUi(tester);
+
+    final entry = (await repository.load()).entries.single;
+
+    expect(entry.text, '  原文不改。\n阿們。  ');
+    expect(entry.text.codeUnits, '  原文不改。\n阿們。  '.codeUnits);
+    expect(entry.source, '禱告');
+    expect(entry.tags, const ['信心']);
   });
 
   testWidgets('favorite persists after reload', (tester) async {
@@ -132,13 +200,15 @@ Future<TestReflectionEntryRepository> _pumpJournalHarness(
 ReflectionEntry _entry({
   String id = 'entry-1',
   required String text,
+  String source = '講道',
+  List<String> tags = const [],
   bool isFavorite = false,
 }) {
   return ReflectionEntry(
     id: id,
     text: text,
-    source: '講道',
-    tags: const [],
+    source: source,
+    tags: tags,
     createdAt: DateTime.utc(2026, 5, 7, 8),
     updatedAt: DateTime.utc(2026, 5, 7, 8),
     isFavorite: isFavorite,

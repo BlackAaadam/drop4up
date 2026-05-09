@@ -41,10 +41,10 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text('Profile'), findsWidgets);
-    expect(find.text('Backup JSON'), findsOneWidget);
-    expect(find.text('Restore JSON'), findsOneWidget);
-    expect(find.text('Preferences'), findsOneWidget);
-    expect(find.text('About Drop4Up'), findsOneWidget);
+    expect(find.text('備份資料'), findsOneWidget);
+    expect(find.text('還原資料'), findsOneWidget);
+    expect(find.text('偏好設定'), findsOneWidget);
+    expect(find.text('關於 Drop4Up'), findsOneWidget);
     expect(find.text('Profile shell preview'), findsNothing);
   });
 }

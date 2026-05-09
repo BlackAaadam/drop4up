@@ -3,18 +3,9 @@ import 'package:flutter/material.dart';
 import '../state/reflection_entries_scope.dart';
 import '../ui/drop4up_tactile_surface.dart';
 import '../ui/drop4up_tokens.dart';
+import '../ui/reflection_taxonomy.dart';
 import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
-
-const _sourceChips = [
-  _DropSource.material('講道', Icons.co_present_outlined),
-  _DropSource.material('禱告', Icons.volunteer_activism_outlined),
-  _DropSource('靈修', Icons.wb_twilight_outlined),
-  _DropSource.material('閱讀', Icons.menu_book_outlined),
-  _DropSource.material('其他', Icons.more_horiz_rounded),
-];
-
-const _manualTags = ['平安', '信心', '感恩', '愛'];
 
 class DropScreen extends StatelessWidget {
   const DropScreen({super.key});
@@ -101,13 +92,16 @@ class _DropEntryCard extends StatefulWidget {
 
 class _DropEntryCardState extends State<_DropEntryCard> {
   final TextEditingController _textController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
   int _selectedSourceIndex = 0;
   final Set<int> _selectedTagIndices = {};
+  final List<String> _manualTags = List.of(reflectionSuggestedTags);
   String? _statusText;
 
   @override
   void dispose() {
     _textController.dispose();
+    _tagController.dispose();
     super.dispose();
   }
 
@@ -124,7 +118,7 @@ class _DropEntryCardState extends State<_DropEntryCard> {
 
     await ReflectionEntriesScope.read(context).addEntry(
       text: text,
-      source: _sourceChips[_selectedSourceIndex].label,
+      source: reflectionSourceOptions[_selectedSourceIndex].label,
       tags: selectedTags,
     );
 
@@ -181,9 +175,13 @@ class _DropEntryCardState extends State<_DropEntryCard> {
             spacing: 8,
             endPadding: 34,
             children: [
-              for (var index = 0; index < _sourceChips.length; index++)
+              for (
+                var index = 0;
+                index < reflectionSourceOptions.length;
+                index++
+              )
                 _SourceChip(
-                  source: _sourceChips[index],
+                  source: reflectionSourceOptions[index],
                   selected: index == _selectedSourceIndex,
                   onTap: () => setState(() => _selectedSourceIndex = index),
                 ),
@@ -209,7 +207,10 @@ class _DropEntryCardState extends State<_DropEntryCard> {
                     });
                   },
                 ),
-              _AddTagChip(onTap: () {}),
+              _AddTagChip(
+                key: const Key('drop_add_tag_button'),
+                onTap: _showAddTagDialog,
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -282,6 +283,96 @@ class _DropEntryCardState extends State<_DropEntryCard> {
         ],
       ),
     );
+  }
+
+  Future<void> _showAddTagDialog() async {
+    _tagController.clear();
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        final textTheme = Theme.of(dialogContext).textTheme;
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          child: SoftSurface(
+            variant: SoftSurfaceVariant.prominent,
+            radius: 28,
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('新增標籤', style: textTheme.titleMedium),
+                const SizedBox(height: 12),
+                Drop4UpTactileSurface(
+                  variant: Drop4UpTactileSurfaceVariant.inset,
+                  height: 46,
+                  radius: 23,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  color: Drop4UpTokens.cardSurface,
+                  child: TextField(
+                    key: const Key('drop_add_tag_input'),
+                    controller: _tagController,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      counterText: '',
+                      isCollapsed: true,
+                      hintText: '#標籤',
+                      hintStyle: textTheme.bodyMedium?.copyWith(
+                        color: Drop4UpTokens.textSecondary,
+                      ),
+                    ),
+                    style: textTheme.bodyMedium,
+                    cursorColor: Drop4UpTokens.primaryBlue,
+                    onSubmitted: (value) {
+                      Navigator.of(dialogContext).pop(_normalizeTag(value));
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DropDialogAction(
+                        label: '取消',
+                        icon: Icons.close_rounded,
+                        muted: true,
+                        onTap: () => Navigator.of(dialogContext).pop(),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _DropDialogAction(
+                        key: const Key('drop_add_tag_confirm_button'),
+                        label: '加入',
+                        icon: Icons.add_rounded,
+                        onTap: () => Navigator.of(
+                          dialogContext,
+                        ).pop(_normalizeTag(_tagController.text)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || tag == null || tag.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      var index = _manualTags.indexOf(tag);
+      if (index == -1) {
+        _manualTags.add(tag);
+        index = _manualTags.length - 1;
+      }
+      _selectedTagIndices.add(index);
+    });
   }
 }
 
@@ -503,14 +594,13 @@ class _SourceChip extends StatelessWidget {
     required this.onTap,
   });
 
-  final _DropSource source;
+  final ReflectionSourceOption source;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final icon = source.icon;
     final horizontalPadding = selected ? 17.0 : 20.0;
 
     return GestureDetector(
@@ -529,8 +619,8 @@ class _SourceChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (selected && icon != null) ...[
-              Icon(icon, size: 17, color: Drop4UpTokens.primaryBlue),
+            if (selected) ...[
+              Icon(source.icon, size: 17, color: Drop4UpTokens.primaryBlue),
               const SizedBox(width: 7),
             ],
             Text(
@@ -592,7 +682,7 @@ class _ManualTagChip extends StatelessWidget {
 }
 
 class _AddTagChip extends StatelessWidget {
-  const _AddTagChip({required this.onTap});
+  const _AddTagChip({super.key, required this.onTap});
 
   final VoidCallback onTap;
 
@@ -617,10 +707,53 @@ class _AddTagChip extends StatelessWidget {
   }
 }
 
-class _DropSource {
-  const _DropSource(this.label, this.icon);
-  const _DropSource.material(this.label, this.icon);
+class _DropDialogAction extends StatelessWidget {
+  const _DropDialogAction({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.muted = false,
+  });
 
   final String label;
-  final IconData? icon;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final color = muted
+        ? Drop4UpTokens.textSecondary
+        : Drop4UpTokens.primaryBlue;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Drop4UpTactileSurface(
+        variant: muted
+            ? Drop4UpTactileSurfaceVariant.raised
+            : Drop4UpTactileSurfaceVariant.inset,
+        radius: 20,
+        height: 44,
+        color: muted
+            ? Drop4UpTokens.cardSurface
+            : Drop4UpTokens.lightBlue.withValues(alpha: 0.34),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 7),
+            Text(label, style: textTheme.labelLarge?.copyWith(color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _normalizeTag(String value) {
+  final trimmed = value.trim();
+  return trimmed.startsWith('#') ? trimmed.substring(1).trim() : trimmed;
 }
