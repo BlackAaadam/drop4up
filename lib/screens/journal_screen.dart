@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/reflection_entry.dart';
 import '../state/reflection_entries_scope.dart';
+import '../ui/drop4up_date_picker.dart';
+import '../ui/drop4up_dialog_route.dart';
 import '../ui/drop4up_tactile_surface.dart';
 import '../ui/drop4up_tokens.dart';
 import '../ui/reflection_taxonomy.dart';
@@ -368,12 +370,14 @@ Future<void> _showEntryDetail(
   final controller = ReflectionEntriesScope.read(context);
   final textController = TextEditingController(text: entry.text);
   final tagController = TextEditingController();
+  var selectedDate = _dateOnlyLocal(entry.createdAt);
+  var didChangeDate = false;
   var selectedSource =
       reflectionSourceOptions.any((source) => source.label == entry.source)
       ? entry.source
       : reflectionSourceOptions.first.label;
   final editableTags = List<String>.of(entry.tags);
-  await showDialog<void>(
+  await showDrop4UpDialog<void>(
     context: context,
     builder: (dialogContext) {
       final textTheme = Theme.of(dialogContext).textTheme;
@@ -428,6 +432,20 @@ Future<void> _showEntryDetail(
                     ),
                   ),
                   const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Drop4UpDateField(
+                      key: const Key('entry_date_picker_button'),
+                      selectedDate: selectedDate,
+                      onChanged: (date) {
+                        setDialogState(() {
+                          selectedDate = date;
+                          didChangeDate = true;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _JournalSourceEditor(
                     selectedSource: selectedSource,
                     onChanged: (source) {
@@ -475,6 +493,9 @@ Future<void> _showEntryDetail(
                               text: textController.text,
                               source: selectedSource,
                               tags: editableTags,
+                              createdAt: didChangeDate
+                                  ? drop4UpDateOnlyUtc(selectedDate)
+                                  : null,
                             );
                             if (dialogContext.mounted) {
                               Navigator.of(dialogContext).pop();
@@ -496,7 +517,7 @@ Future<void> _showEntryDetail(
 }
 
 Future<bool?> _confirmDelete(BuildContext context) {
-  return showDialog<bool>(
+  return showDrop4UpDialog<bool>(
     context: context,
     builder: (dialogContext) {
       final textTheme = Theme.of(dialogContext).textTheme;
@@ -657,7 +678,7 @@ Future<_JournalFilter?> _showJournalFilterSheet(
   final stats = _buildJournalFilterStats(entries);
   final favoriteCount = entries.where((entry) => entry.isFavorite).length;
 
-  return showDialog<_JournalFilter>(
+  return showDrop4UpDialog<_JournalFilter>(
     context: context,
     builder: (dialogContext) {
       final textTheme = Theme.of(dialogContext).textTheme;
@@ -1066,7 +1087,7 @@ Future<String?> _showTagInputDialog(
   BuildContext context,
   TextEditingController tagController,
 ) {
-  return showDialog<String>(
+  return showDrop4UpDialog<String>(
     context: context,
     builder: (dialogContext) {
       final textTheme = Theme.of(dialogContext).textTheme;
@@ -1144,6 +1165,11 @@ Future<String?> _showTagInputDialog(
 String _formatEntryDate(DateTime date) {
   final local = date.toLocal();
   return '${local.year}.${_twoDigits(local.month)}.${_twoDigits(local.day)}';
+}
+
+DateTime _dateOnlyLocal(DateTime date) {
+  final local = date.toLocal();
+  return DateTime(local.year, local.month, local.day);
 }
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
@@ -1250,7 +1276,7 @@ Future<void> _showVisualCardPreview(
   BuildContext context,
   ReflectionEntry? entry,
 ) {
-  return showDialog<void>(
+  return showDrop4UpDialog<void>(
     context: context,
     builder: (dialogContext) {
       final textTheme = Theme.of(dialogContext).textTheme;

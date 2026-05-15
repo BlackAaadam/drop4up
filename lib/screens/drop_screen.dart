@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../state/reflection_entries_scope.dart';
+import '../ui/drop4up_date_picker.dart';
+import '../ui/drop4up_dialog_route.dart';
 import '../ui/drop4up_tactile_surface.dart';
 import '../ui/drop4up_tokens.dart';
 import '../ui/reflection_taxonomy.dart';
@@ -98,6 +100,8 @@ class _DropEntryCardState extends State<_DropEntryCard> {
   int _selectedSourceIndex = 0;
   final Set<int> _selectedTagIndices = {};
   final List<String> _manualTags = List.of(reflectionSuggestedTags);
+  DateTime _selectedDate = DateTime.now();
+  bool _hasCustomDate = false;
   String? _statusText;
 
   @override
@@ -122,6 +126,7 @@ class _DropEntryCardState extends State<_DropEntryCard> {
       text: text,
       source: reflectionSourceOptions[_selectedSourceIndex].label,
       tags: selectedTags,
+      createdAt: _hasCustomDate ? drop4UpDateOnlyUtc(_selectedDate) : null,
     );
 
     if (!mounted) {
@@ -130,6 +135,8 @@ class _DropEntryCardState extends State<_DropEntryCard> {
     _textController.clear();
     setState(() {
       _selectedTagIndices.clear();
+      _selectedDate = DateTime.now();
+      _hasCustomDate = false;
       _statusText = '已儲存在本機。';
     });
   }
@@ -173,13 +180,31 @@ class _DropEntryCardState extends State<_DropEntryCard> {
                 iconSize: 20,
                 onTap: () {
                   _textController.clear();
-                  setState(() => _statusText = null);
+                  setState(() {
+                    _selectedDate = DateTime.now();
+                    _hasCustomDate = false;
+                    _statusText = null;
+                  });
                 },
               ),
             ],
           ),
           const SizedBox(height: 12),
           _DropEditorSurface(controller: _textController),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Drop4UpDateField(
+              key: const Key('drop_date_picker_button'),
+              selectedDate: _selectedDate,
+              onChanged: (date) {
+                setState(() {
+                  _selectedDate = date;
+                  _hasCustomDate = true;
+                });
+              },
+            ),
+          ),
           const SizedBox(height: 12),
           _HorizontalChipRow(
             height: 42,
@@ -302,7 +327,7 @@ class _DropEntryCardState extends State<_DropEntryCard> {
 
   Future<void> _showAddTagDialog() async {
     _tagController.clear();
-    final tag = await showDialog<String>(
+    final tag = await showDrop4UpDialog<String>(
       context: context,
       builder: (dialogContext) {
         final textTheme = Theme.of(dialogContext).textTheme;

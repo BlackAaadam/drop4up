@@ -57,6 +57,7 @@ class ReflectionEntriesController extends ChangeNotifier {
     required String text,
     required String source,
     List<String> tags = const [],
+    DateTime? createdAt,
   }) async {
     final now = _clock().toUtc();
     final entry = ReflectionEntry(
@@ -64,7 +65,7 @@ class ReflectionEntriesController extends ChangeNotifier {
       text: text,
       source: source,
       tags: List.unmodifiable(tags),
-      createdAt: now,
+      createdAt: createdAt == null ? now : _dateOnlyUtc(createdAt),
       updatedAt: now,
       isFavorite: false,
     );
@@ -105,6 +106,7 @@ class ReflectionEntriesController extends ChangeNotifier {
     required String text,
     required String source,
     required List<String> tags,
+    DateTime? createdAt,
   }) async {
     final now = _clock().toUtc();
     await _replaceEntry(
@@ -113,6 +115,7 @@ class ReflectionEntriesController extends ChangeNotifier {
         text: text,
         source: source,
         tags: List.unmodifiable(tags),
+        createdAt: createdAt == null ? null : _dateOnlyUtc(createdAt),
         updatedAt: now,
       ),
     );
@@ -187,5 +190,9 @@ class ReflectionEntriesController extends ChangeNotifier {
     final sorted = List<ReflectionEntry>.of(entries);
     sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return sorted;
+  }
+
+  static DateTime _dateOnlyUtc(DateTime date) {
+    return DateTime.utc(date.year, date.month, date.day);
   }
 }

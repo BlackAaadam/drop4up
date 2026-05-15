@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'dart:ui' as ui;
 
 import 'data/reflection_entry_repository.dart';
 import 'data/profile_backup_file_service.dart';
@@ -9,13 +11,50 @@ import 'screens/profile_screen.dart';
 import 'state/reflection_entries_controller.dart';
 import 'state/reflection_entries_scope.dart';
 import 'ui/drop4up_scaffold.dart';
+import 'ui/drop4up_surface_skin.dart';
 import 'ui/drop4up_tokens.dart';
 import 'ui/primary_drop_button.dart';
 import 'ui/soft_icon_button.dart';
 import 'ui/soft_surface.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  _installFrameTimingLogger();
+  await Drop4UpSurfaceSkinCache.instance.warmUp();
   runApp(const Drop4UpPreviewApp());
+}
+
+void _installFrameTimingLogger() {
+  const enabled = bool.fromEnvironment('DROP4UP_FRAME_LOG');
+  if (!enabled) {
+    return;
+  }
+
+  SchedulerBinding.instance.addTimingsCallback((timings) {
+    for (final timing in timings) {
+      final buildMs = timing.buildDuration.inMicroseconds / 1000;
+      final rasterMs = timing.rasterDuration.inMicroseconds / 1000;
+      final vsyncMs = timing.vsyncOverhead.inMicroseconds / 1000;
+      final buildToRasterMs =
+          (timing.timestampInMicroseconds(ui.FramePhase.rasterStart) -
+              timing.timestampInMicroseconds(ui.FramePhase.buildFinish)) /
+          1000;
+      final totalMs = timing.totalSpan.inMicroseconds / 1000;
+      if (buildMs < 8 && rasterMs < 8 && totalMs < 16) {
+        continue;
+      }
+      debugPrint(
+        'Drop4UpFrame '
+        'vsyncMs=${vsyncMs.toStringAsFixed(1)} '
+        'buildMs=${buildMs.toStringAsFixed(1)} '
+        'buildToRasterMs=${buildToRasterMs.toStringAsFixed(1)} '
+        'rasterMs=${rasterMs.toStringAsFixed(1)} '
+        'totalMs=${totalMs.toStringAsFixed(1)} '
+        'layerCache=${timing.layerCacheCount}/${timing.layerCacheMegabytes.toStringAsFixed(1)}MB '
+        'pictureCache=${timing.pictureCacheCount}',
+      );
+    }
+  });
 }
 
 class Drop4UpPreviewApp extends StatefulWidget {

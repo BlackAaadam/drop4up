@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart' hide BoxDecoration, BoxShadow;
 import 'package:flutter_inset_shadow/flutter_inset_shadow.dart';
 
+import 'drop4up_feature_flags.dart';
+import 'drop4up_surface_skin.dart';
 import 'drop4up_tokens.dart';
 
 enum SoftSurfaceVariant { raised, prominent, inset, pressed }
@@ -29,6 +31,23 @@ class SoftSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(radius);
 
+    if (_shouldUseSkin()) {
+      return Drop4UpSkinnedSurface(
+        kind: _skinKind(),
+        color: color,
+        radius: radius,
+        width: width,
+        height: height,
+        padding: padding,
+        legacyBuilder: (_) => _legacySurface(borderRadius),
+        child: child,
+      );
+    }
+
+    return _legacySurface(borderRadius);
+  }
+
+  Widget _legacySurface(BorderRadius borderRadius) {
     return AnimatedContainer(
       duration: Drop4UpTokens.calmDuration,
       curve: Drop4UpTokens.calmCurve,
@@ -39,6 +58,23 @@ class SoftSurface extends StatelessWidget {
       child: child,
     );
   }
+
+  Drop4UpSurfaceSkinKind _skinKind() {
+    return switch (variant) {
+      SoftSurfaceVariant.raised => Drop4UpSurfaceSkinKind.softRaised,
+      SoftSurfaceVariant.prominent => Drop4UpSurfaceSkinKind.softProminent,
+      SoftSurfaceVariant.inset => Drop4UpSurfaceSkinKind.softInset,
+      SoftSurfaceVariant.pressed => Drop4UpSurfaceSkinKind.softPressed,
+    };
+  }
+
+  bool _shouldUseSkin() {
+    // Keep skin rendering opt-in only. The current nine-slice prototype is
+    // fast, but it visibly distorts Drop4Up's soft surfaces on real devices.
+    return Drop4UpFeatureFlags.useSurfaceSkins && _skinRendererReady;
+  }
+
+  static const bool _skinRendererReady = false;
 
   BoxDecoration _decoration(BorderRadius borderRadius) {
     return switch (variant) {

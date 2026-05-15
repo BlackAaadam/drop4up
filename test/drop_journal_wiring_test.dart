@@ -29,6 +29,39 @@ void main() {
     expect(find.text('已儲存在本機。'), findsOneWidget);
   });
 
+  testWidgets('Drop save can use a selected past date', (tester) async {
+    final harness = await _pumpHarness(tester);
+    const text = '  Backdated text stays exactly.\nAmen.  ';
+    final now = DateTime.now();
+    final selectedDate = DateTime(now.year, now.month - 1, 15);
+
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+    await tester.enterText(find.byKey(const Key('drop_text_input')), text);
+    await tester.tap(find.byKey(const Key('drop_date_picker_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('date_picker_previous_month')));
+    await _pumpUi(tester);
+    await tester.tap(
+      find.byKey(ValueKey('date_picker_day_${_dateKey(selectedDate)}')),
+    );
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('date_picker_confirm_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('save_drop_button')));
+    await _pumpUi(tester);
+
+    final entry = (await harness.repository.load()).entries.single;
+
+    expect(entry.text, text);
+    expect(entry.text.codeUnits, text.codeUnits);
+    expect(
+      entry.createdAt,
+      DateTime.utc(selectedDate.year, selectedDate.month, selectedDate.day),
+    );
+    expect(entry.updatedAt, DateTime.utc(2026, 5, 7, 12));
+  });
+
   testWidgets('saved entry appears in Journal', (tester) async {
     await _pumpHarness(tester);
     const text = '今天安靜記下一句，不改寫。';
@@ -187,6 +220,12 @@ Future<void> _pumpUi(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 350));
 }
+
+String _dateKey(DateTime date) {
+  return '${date.year}-${_twoDigits(date.month)}-${_twoDigits(date.day)}';
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 class _Harness {
   const _Harness(this.repository);

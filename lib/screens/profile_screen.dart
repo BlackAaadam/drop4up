@@ -4,6 +4,7 @@ import '../data/profile_backup_file_service.dart';
 import '../data/reflection_entry.dart';
 import '../data/reflection_entry_document.dart';
 import '../state/reflection_entries_scope.dart';
+import '../ui/drop4up_dialog_route.dart';
 import '../ui/drop4up_tactile_surface.dart';
 import '../ui/drop4up_tokens.dart';
 import '../ui/primary_drop_button.dart';
@@ -443,7 +444,7 @@ Future<void> _showProfileSheet(
 }) {
   final textTheme = Theme.of(context).textTheme;
 
-  return showDialog<void>(
+  return showDrop4UpDialog<void>(
     context: context,
     builder: (context) {
       return Dialog(

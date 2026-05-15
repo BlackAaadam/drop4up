@@ -194,6 +194,83 @@ void main() {
     expect(entry.tags, const ['信心']);
   });
 
+  testWidgets('edit can update date without changing entry content', (
+    tester,
+  ) async {
+    final repository = await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'entry-date',
+          text: '  Date edit keeps this text.\nAmen.  ',
+          source: '講道',
+          tags: const ['平安'],
+          createdAt: DateTime.utc(2026, 5, 7, 8),
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('journal_entry_entry-date')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_date_picker_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('date_picker_day_2026-05-05')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('date_picker_confirm_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_save_button')));
+    await _pumpUi(tester);
+
+    final entry = (await repository.load()).entries.single;
+
+    expect(entry.text, '  Date edit keeps this text.\nAmen.  ');
+    expect(
+      entry.text.codeUnits,
+      '  Date edit keeps this text.\nAmen.  '.codeUnits,
+    );
+    expect(entry.source, '講道');
+    expect(entry.tags, const ['平安']);
+    expect(entry.createdAt, DateTime.utc(2026, 5, 5));
+    expect(entry.updatedAt, DateTime.utc(2026, 5, 7, 12, 30));
+  });
+
+  testWidgets('editing date reorders recent drops by created date', (
+    tester,
+  ) async {
+    final repository = await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'entry-target',
+          text: 'Target entry.',
+          createdAt: DateTime.utc(2026, 5, 4, 8),
+        ),
+        _entry(
+          id: 'entry-current-first',
+          text: 'Current first entry.',
+          createdAt: DateTime.utc(2026, 5, 5, 8),
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('journal_entry_entry-target')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_date_picker_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('date_picker_day_2026-05-06')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('date_picker_confirm_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_save_button')));
+    await _pumpUi(tester);
+
+    final entries = (await repository.load()).entries;
+
+    expect(entries.first.id, 'entry-target');
+    expect(entries.first.createdAt, DateTime.utc(2026, 5, 6));
+    expect(entries.last.id, 'entry-current-first');
+  });
+
   testWidgets('visual card preview uses first visible entry exactly', (
     tester,
   ) async {
