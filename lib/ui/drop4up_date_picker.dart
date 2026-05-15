@@ -23,11 +23,13 @@ class Drop4UpDateField extends StatelessWidget {
     required this.selectedDate,
     required this.onChanged,
     this.label = '日期',
+    this.showLabel = true,
   });
 
   final DateTime selectedDate;
   final ValueChanged<DateTime> onChanged;
   final String label;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +63,9 @@ class Drop4UpDateField extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '$label ${formatDrop4UpEntryDate(selectedDate)}',
+              showLabel
+                  ? '$label ${formatDrop4UpEntryDate(selectedDate)}'
+                  : formatDrop4UpEntryDate(selectedDate),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.labelLarge?.copyWith(

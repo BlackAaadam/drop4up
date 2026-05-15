@@ -271,6 +271,46 @@ void main() {
     expect(entries.last.id, 'entry-current-first');
   });
 
+  testWidgets('recent drops show three entries until view all is tapped', (
+    tester,
+  ) async {
+    await _pumpJournalHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'entry-1',
+          text: 'First visible entry.',
+          createdAt: DateTime.utc(2026, 5, 7, 8),
+        ),
+        _entry(
+          id: 'entry-2',
+          text: 'Second visible entry.',
+          createdAt: DateTime.utc(2026, 5, 6, 8),
+        ),
+        _entry(
+          id: 'entry-3',
+          text: 'Third visible entry.',
+          createdAt: DateTime.utc(2026, 5, 5, 8),
+        ),
+        _entry(
+          id: 'entry-4',
+          text: 'Fourth hidden entry.',
+          createdAt: DateTime.utc(2026, 5, 4, 8),
+        ),
+      ],
+    );
+
+    expect(find.text('First visible entry.'), findsOneWidget);
+    expect(find.text('Second visible entry.'), findsOneWidget);
+    expect(find.text('Third visible entry.'), findsOneWidget);
+    expect(find.text('Fourth hidden entry.'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('journal_view_all_button')));
+    await _pumpUi(tester);
+
+    expect(find.text('Fourth hidden entry.'), findsOneWidget);
+  });
+
   testWidgets('visual card preview uses first visible entry exactly', (
     tester,
   ) async {
@@ -294,7 +334,9 @@ void main() {
       ],
     );
 
-    await tester.tap(find.text('建立視覺卡片'));
+    await tester.tap(find.byKey(const ValueKey('journal_entry_entry-preview')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_visual_card_button')));
     await _pumpUi(tester);
 
     final preview = tester.widget<Text>(
@@ -313,18 +355,6 @@ void main() {
       find.descendant(of: previewCard, matching: find.text('#愛')),
       findsOneWidget,
     );
-  });
-
-  testWidgets('visual card preview has empty guidance without entries', (
-    tester,
-  ) async {
-    await _pumpJournalHarness(tester, entries: const []);
-
-    await tester.tap(find.text('建立視覺卡片'));
-    await _pumpUi(tester);
-
-    expect(find.text('視覺卡片預覽'), findsOneWidget);
-    expect(find.text('先在 Drop 記下一滴，就能在這裡預覽視覺卡片。'), findsOneWidget);
   });
 
   testWidgets('favorite persists after reload', (tester) async {

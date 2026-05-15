@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide BoxDecoration, BoxShadow;
 import 'package:flutter_inset_shadow/flutter_inset_shadow.dart';
 
-import 'drop4up_surface_skin.dart';
 import 'drop4up_tokens.dart';
 
 enum Drop4UpTactileSurfaceVariant { raised, primaryRaised, inset, pressed }
@@ -32,23 +31,6 @@ class Drop4UpTactileSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (_shouldUseSkin()) {
-      return Drop4UpSkinnedSurface(
-        kind: _skinKind(),
-        color: color,
-        radius: radius,
-        width: width,
-        height: height,
-        padding: padding,
-        legacyBuilder: (_) => _legacySurface(),
-        child: child,
-      );
-    }
-
-    return _legacySurface();
-  }
-
-  Widget _legacySurface() {
     return AnimatedContainer(
       duration: Drop4UpTokens.calmDuration,
       curve: Drop4UpTokens.calmCurve,
@@ -58,24 +40,6 @@ class Drop4UpTactileSurface extends StatelessWidget {
       decoration: _decoration(),
       child: child,
     );
-  }
-
-  Drop4UpSurfaceSkinKind _skinKind() {
-    return switch (variant) {
-      Drop4UpTactileSurfaceVariant.raised =>
-        Drop4UpSurfaceSkinKind.tactileRaised,
-      Drop4UpTactileSurfaceVariant.primaryRaised =>
-        Drop4UpSurfaceSkinKind.tactilePrimaryRaised,
-      Drop4UpTactileSurfaceVariant.inset => Drop4UpSurfaceSkinKind.tactileInset,
-      Drop4UpTactileSurfaceVariant.pressed =>
-        Drop4UpSurfaceSkinKind.tactilePressed,
-    };
-  }
-
-  bool _shouldUseSkin() {
-    // Small tactile controls depend on exact radius-to-height proportions.
-    // Keep their legacy renderer until an exact-size skin renderer is needed.
-    return false;
   }
 
   BoxDecoration _decoration() {

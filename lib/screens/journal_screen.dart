@@ -28,6 +28,7 @@ class _JournalScreenState extends State<JournalScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
   _JournalFilter _filter = const _JournalFilter.all();
+  bool _showAllEntries = false;
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _JournalScreenState extends State<JournalScreen> {
       return;
     }
     _filter = _JournalFilter.taxonomy(label);
+    _showAllEntries = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -75,9 +77,13 @@ class _JournalScreenState extends State<JournalScreen> {
               _matchesJournalFilter(entry, _filter),
         )
         .toList();
+    final displayedEntries = _showAllEntries
+        ? visibleEntries
+        : visibleEntries.take(3).toList();
+    final canToggleAll = visibleEntries.length > 3;
 
-    return ListView(
-      padding: EdgeInsets.zero,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
@@ -113,7 +119,10 @@ class _JournalScreenState extends State<JournalScreen> {
         const SizedBox(height: 12),
         _SearchRow(
           controller: _searchController,
-          onChanged: (value) => setState(() => _query = value),
+          onChanged: (value) => setState(() {
+            _query = value;
+            _showAllEntries = false;
+          }),
           onFilterTap: () => _openFilterSheet(context, allEntries),
         ),
         if (!_filter.isAll) ...[
@@ -122,8 +131,10 @@ class _JournalScreenState extends State<JournalScreen> {
             alignment: Alignment.centerLeft,
             child: _ActiveJournalFilterChip(
               filter: _filter,
-              onClear: () =>
-                  setState(() => _filter = const _JournalFilter.all()),
+              onClear: () => setState(() {
+                _filter = const _JournalFilter.all();
+                _showAllEntries = false;
+              }),
             ),
           ),
         ],
@@ -132,29 +143,27 @@ class _JournalScreenState extends State<JournalScreen> {
           children: [
             Text('Recent Drops', style: textTheme.titleMedium),
             const Spacer(),
-            Text(
-              '查看全部',
-              style: textTheme.labelLarge?.copyWith(
-                color: Drop4UpTokens.primaryBlue,
+            if (canToggleAll)
+              GestureDetector(
+                key: const Key('journal_view_all_button'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _showAllEntries = !_showAllEntries),
+                child: Text(
+                  _showAllEntries ? '收合' : '查看全部',
+                  style: textTheme.labelLarge?.copyWith(
+                    color: Drop4UpTokens.primaryBlue,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 9),
-        if (!entriesController.isLoaded)
-          const _JournalStateCard(message: '正在載入紀錄...')
-        else if (allEntries.isEmpty)
-          const _JournalStateCard(message: '還沒有儲存的紀錄。')
-        else if (visibleEntries.isEmpty)
-          const _JournalStateCard(message: '找不到符合的紀錄。')
-        else
-          for (final entry in visibleEntries) ...[
-            _JournalEntryCard(entry: entry),
-            if (entry != visibleEntries.last) const SizedBox(height: 9),
-          ],
-        const SizedBox(height: 11),
-        _CreateVisualCardButton(
-          entry: visibleEntries.isEmpty ? null : visibleEntries.first,
+        Expanded(
+          child: _JournalResultsList(
+            isLoaded: entriesController.isLoaded,
+            hasAnyEntries: allEntries.isNotEmpty,
+            entries: displayedEntries,
+          ),
         ),
       ],
     );
@@ -172,7 +181,52 @@ class _JournalScreenState extends State<JournalScreen> {
     if (!mounted || filter == null) {
       return;
     }
-    setState(() => _filter = filter);
+    setState(() {
+      _filter = filter;
+      _showAllEntries = false;
+    });
+  }
+}
+
+class _JournalResultsList extends StatelessWidget {
+  const _JournalResultsList({
+    required this.isLoaded,
+    required this.hasAnyEntries,
+    required this.entries,
+  });
+
+  final bool isLoaded;
+  final bool hasAnyEntries;
+  final List<ReflectionEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isLoaded) {
+      return const Align(
+        alignment: Alignment.topCenter,
+        child: _JournalStateCard(message: '正在載入紀錄...'),
+      );
+    }
+    if (!hasAnyEntries) {
+      return const Align(
+        alignment: Alignment.topCenter,
+        child: _JournalStateCard(message: '還沒有儲存的紀錄。'),
+      );
+    }
+    if (entries.isEmpty) {
+      return const Align(
+        alignment: Alignment.topCenter,
+        child: _JournalStateCard(message: '找不到符合的紀錄。'),
+      );
+    }
+
+    return ListView.separated(
+      key: const PageStorageKey<String>('journal_results_list'),
+      padding: EdgeInsets.zero,
+      itemCount: entries.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 9),
+      itemBuilder: (context, index) => _JournalEntryCard(entry: entries[index]),
+    );
   }
 }
 
@@ -293,72 +347,130 @@ class _JournalEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return GestureDetector(
-      key: ValueKey('journal_entry_${entry.id}'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _showEntryDetail(context, entry),
-      child: SoftSurface(
-        variant: SoftSurfaceVariant.prominent,
-        radius: 26,
-        padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  _formatEntryDate(entry.createdAt),
-                  style: textTheme.labelMedium?.copyWith(
+    return RepaintBoundary(
+      child: GestureDetector(
+        key: ValueKey('journal_entry_${entry.id}'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _showEntryDetail(context, entry),
+        child: _JournalEntrySurface(
+          radius: 26,
+          padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    _formatEntryDate(entry.createdAt),
+                    style: textTheme.labelMedium?.copyWith(
+                      color: Drop4UpTokens.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    key: ValueKey('favorite_${entry.id}'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => ReflectionEntriesScope.read(
+                      context,
+                    ).toggleFavorite(entry.id),
+                    child: Icon(
+                      entry.isFavorite
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      size: 20,
+                      color: entry.isFavorite
+                          ? Drop4UpTokens.primaryBlue
+                          : Drop4UpTokens.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Icon(
+                    Icons.edit_outlined,
+                    size: 19,
                     color: Drop4UpTokens.textSecondary,
                   ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  key: ValueKey('favorite_${entry.id}'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => ReflectionEntriesScope.read(
-                    context,
-                  ).toggleFavorite(entry.id),
-                  child: Icon(
-                    entry.isFavorite
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    size: 20,
-                    color: entry.isFavorite
-                        ? Drop4UpTokens.primaryBlue
-                        : Drop4UpTokens.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Icon(
-                  Icons.edit_outlined,
-                  size: 19,
-                  color: Drop4UpTokens.textSecondary,
-                ),
-              ],
-            ),
-            const SizedBox(height: 7),
-            Text(
-              entry.text,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodyMedium?.copyWith(height: 1.32),
-            ),
-            if (entry.source.isNotEmpty || entry.tags.isNotEmpty) ...[
-              const SizedBox(height: 7),
-              Wrap(
-                spacing: 7,
-                runSpacing: 7,
-                children: [
-                  if (entry.source.isNotEmpty)
-                    _MiniTag(label: '#${entry.source}'),
-                  for (final tag in entry.tags) _MiniTag(label: '#$tag'),
                 ],
               ),
+              const SizedBox(height: 7),
+              Text(
+                entry.text,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.bodyMedium?.copyWith(height: 1.32),
+              ),
+              if (entry.source.isNotEmpty || entry.tags.isNotEmpty) ...[
+                const SizedBox(height: 7),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: [
+                    if (entry.source.isNotEmpty)
+                      _MiniTag(label: '#${entry.source}'),
+                    for (final tag in entry.tags) _MiniTag(label: '#$tag'),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _JournalEntrySurface extends StatelessWidget {
+  const _JournalEntrySurface({
+    required this.child,
+    required this.radius,
+    required this.padding,
+  });
+
+  final Widget child;
+  final double radius;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Drop4UpTokens.cardSurface,
+        borderRadius: BorderRadius.circular(radius),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0, 0.16, 0.72, 1],
+          colors: [
+            Color.alphaBlend(
+              Drop4UpTokens.softWhite.withValues(alpha: 0.66),
+              Drop4UpTokens.cardSurface,
+            ),
+            Color.alphaBlend(
+              Drop4UpTokens.softWhite.withValues(alpha: 0.24),
+              Drop4UpTokens.cardSurface,
+            ),
+            Drop4UpTokens.cardSurface,
+            Color.alphaBlend(
+              Drop4UpTokens.coolShadow.withValues(alpha: 0.055),
+              Drop4UpTokens.cardSurface,
+            ),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.24),
+            offset: const Offset(3.2, 6.2),
+            blurRadius: 10.5,
+            spreadRadius: -7.5,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.coolShadow.withValues(alpha: 0.09),
+            offset: const Offset(4.8, 5.8),
+            blurRadius: 9.0,
+            spreadRadius: -8.0,
+          ),
+        ],
+      ),
+      child: Padding(padding: padding, child: child),
     );
   }
 }
@@ -432,18 +544,27 @@ Future<void> _showEntryDetail(
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Drop4UpDateField(
-                      key: const Key('entry_date_picker_button'),
-                      selectedDate: selectedDate,
-                      onChanged: (date) {
-                        setDialogState(() {
-                          selectedDate = date;
-                          didChangeDate = true;
-                        });
-                      },
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Drop4UpDateField(
+                            key: const Key('entry_date_picker_button'),
+                            selectedDate: selectedDate,
+                            showLabel: false,
+                            onChanged: (date) {
+                              setDialogState(() {
+                                selectedDate = date;
+                                didChangeDate = true;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      _InlineVisualCardButton(entry: entry),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   _JournalSourceEditor(
@@ -1223,10 +1344,10 @@ class _MiniTag extends StatelessWidget {
   }
 }
 
-class _CreateVisualCardButton extends StatelessWidget {
-  const _CreateVisualCardButton({required this.entry});
+class _InlineVisualCardButton extends StatelessWidget {
+  const _InlineVisualCardButton({required this.entry});
 
-  final ReflectionEntry? entry;
+  final ReflectionEntry entry;
 
   @override
   Widget build(BuildContext context) {
@@ -1236,32 +1357,65 @@ class _CreateVisualCardButton extends StatelessWidget {
       button: true,
       label: '建立視覺卡片',
       child: GestureDetector(
+        key: const Key('entry_visual_card_button'),
         behavior: HitTestBehavior.opaque,
         onTap: () => _showVisualCardPreview(context, entry),
-        child: Drop4UpTactileSurface(
-          variant: Drop4UpTactileSurfaceVariant.primaryRaised,
-          height: 52,
-          radius: 22,
-          color: Drop4UpTokens.primaryBlue,
+        child: AnimatedContainer(
+          duration: Drop4UpTokens.calmDuration,
+          curve: Drop4UpTokens.calmCurve,
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Drop4UpTokens.pillRadius),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: const [0, 0.42, 1],
+              colors: [
+                Color.alphaBlend(
+                  Drop4UpTokens.softWhite.withValues(alpha: 0.28),
+                  Drop4UpTokens.primaryBlue,
+                ),
+                Drop4UpTokens.primaryBlue,
+                Color.alphaBlend(
+                  Drop4UpTokens.accentBlue.withValues(alpha: 0.16),
+                  Drop4UpTokens.primaryBlue,
+                ),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Drop4UpTokens.primaryBlue.withValues(alpha: 0.14),
+                offset: const Offset(2.2, 4.0),
+                blurRadius: 8.0,
+                spreadRadius: -4.5,
+              ),
+              BoxShadow(
+                color: Drop4UpTokens.softWhite.withValues(alpha: 0.36),
+                offset: const Offset(-0.8, -0.8),
+                blurRadius: 2.2,
+                spreadRadius: -2.0,
+              ),
+            ],
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
                 Icons.image_outlined,
-                size: 20,
+                size: 16,
                 color: Drop4UpTokens.softWhite,
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '建立視覺卡片',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontSize: 16,
-                    color: Drop4UpTokens.softWhite,
-                    fontWeight: FontWeight.w500,
-                  ),
+              const SizedBox(width: 6),
+              Text(
+                '圖卡',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.labelMedium?.copyWith(
+                  fontSize: 14,
+                  color: Drop4UpTokens.softWhite,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

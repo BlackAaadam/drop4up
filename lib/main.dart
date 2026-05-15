@@ -11,16 +11,14 @@ import 'screens/profile_screen.dart';
 import 'state/reflection_entries_controller.dart';
 import 'state/reflection_entries_scope.dart';
 import 'ui/drop4up_scaffold.dart';
-import 'ui/drop4up_surface_skin.dart';
 import 'ui/drop4up_tokens.dart';
 import 'ui/primary_drop_button.dart';
 import 'ui/soft_icon_button.dart';
 import 'ui/soft_surface.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
   _installFrameTimingLogger();
-  await Drop4UpSurfaceSkinCache.instance.warmUp();
   runApp(const Drop4UpPreviewApp());
 }
 

@@ -34,7 +34,7 @@ void main() {
 
     expect(find.text('Journal'), findsWidgets);
     expect(find.text('還沒有儲存的紀錄。'), findsOneWidget);
-    expect(find.text('建立視覺卡片'), findsOneWidget);
+    expect(find.text('建立視覺卡片'), findsNothing);
     expect(find.text('Journal shell preview'), findsNothing);
 
     await tester.tap(find.text('Profile'));

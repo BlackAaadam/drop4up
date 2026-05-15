@@ -172,21 +172,6 @@ class _DropEntryCardState extends State<_DropEntryCard> {
                   style: textTheme.titleMedium,
                 ),
               ),
-              const SizedBox(width: 12),
-              SoftIconButton(
-                icon: Icons.close_rounded,
-                label: '清除',
-                size: 40,
-                iconSize: 20,
-                onTap: () {
-                  _textController.clear();
-                  setState(() {
-                    _selectedDate = DateTime.now();
-                    _hasCustomDate = false;
-                    _statusText = null;
-                  });
-                },
-              ),
             ],
           ),
           const SizedBox(height: 12),
