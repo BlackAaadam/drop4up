@@ -65,6 +65,29 @@ void main() {
     expect(find.byKey(const Key('profile_backup_json_text')), findsNothing);
   });
 
+  testWidgets('Backup failure shows error and keeps sheet open', (
+    tester,
+  ) async {
+    final repository = await _pumpProfileHarness(
+      tester,
+      entries: [_entry(id: 'safe-entry', text: 'Keep local data safe')],
+      backupFileService: ProfileBackupFileService(
+        directoryProvider: () async {
+          throw StateError('write failed');
+        },
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.file_download_outlined));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('profile_backup_file_button')));
+    await _pumpUi(tester);
+
+    expect(find.byKey(const Key('profile_backup_file_error')), findsOneWidget);
+    expect(find.byKey(const Key('profile_backup_file_button')), findsOneWidget);
+    expect((await repository.load()).entries.single.id, 'safe-entry');
+  });
+
   testWidgets('Restore valid JSON can replace local entries', (tester) async {
     final repository = await _pumpProfileHarness(
       tester,

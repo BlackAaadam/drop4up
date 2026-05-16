@@ -24,7 +24,7 @@ Latest verification:
 
 - `flutter pub get`: passed.
 - `flutter analyze`: passed.
-- `flutter test`: passed with 60 tests.
+- `flutter test`: passed with 61 tests.
 
 ## Recently Completed
 
@@ -44,6 +44,8 @@ Latest verification:
 - Completed stage-ready prototype freeze cleanup and created review commit `f8aa53f` (`Freeze Drop4Up UI prototype`).
 - Started local-only beta hardening with Drop save-failure feedback that preserves the unsaved draft.
 - Added `handoff/BETA_CHECKLIST.md` to track data safety, failure states, manual QA, and artifact policy for internal beta review.
+- Completed 360 x 800 Journal/Profile screenshot QA for the local-only beta pass.
+- Added Profile backup failure widget coverage.
 
 ## Remaining Gaps
 
@@ -164,6 +166,24 @@ Acceptance:
 - Failed local save does not clear user text.
 - Failed local save does not write a partial entry.
 - User sees a clear failure message in the Drop screen.
+- `flutter pub get`, `flutter analyze`, and `flutter test` pass.
+
+### Step 7 - 360 x 800 Beta QA Completion - Done
+
+Goal: close the remaining narrow-device screenshot gaps and verify Profile backup failure feedback.
+
+Completed:
+
+- Captured `handoff/screenshots/journal_qa_360x800.png` at a real 360 x 800 browser viewport.
+- Captured `handoff/screenshots/profile_qa_360x800.png` at a real 360 x 800 browser viewport.
+- Verified Journal/Profile content, action entrypoints, and bottom navigation are not right-clipped at 360 px.
+- Added widget coverage that a Profile backup failure shows an inline error and keeps the backup sheet open.
+- Left existing untracked QA/reference artifacts untouched.
+
+Acceptance:
+
+- `handoff/BETA_CHECKLIST.md` has all 360 x 800 screenshot QA items checked.
+- Backup failure feedback is covered by automated tests.
 - `flutter pub get`, `flutter analyze`, and `flutter test` pass.
 
 ## Standard Verification

@@ -25,8 +25,8 @@ Estimated state by milestone:
 | Journal | Functional prototype | Search, filters, favorite, edit, delete, visual card preview, PNG export/share. |
 | Profile | Functional prototype | Local stats, backup file creation/share, merge/replace restore from file or pasted backup, persisted large-text preference, about. |
 | Local persistence | Functional prototype | JSON document storage through repository/controller plus local preferences storage. |
-| Automated tests | Passing | `flutter test` passed with 60 tests. |
-| Screenshot QA | Present | 393x873 screenshots exist for all main screens and the visual-card-dialog. |
+| Automated tests | Passing | `flutter test` passed with 61 tests. |
+| Screenshot QA | Present | 393x873 screenshots exist for all main screens and the visual-card-dialog; 360x800 screenshots now cover Drop, Journal, and Profile. |
 | Production readiness | Not started | No auth, backend, real AI/OCR/STT, cloud sync, analytics, payments, release hardening. |
 
 ## 3. Implemented App Structure
@@ -302,7 +302,7 @@ Results:
 
 - `flutter pub get`: passed.
 - `flutter analyze`: passed, no issues found.
-- `flutter test`: passed, 60 tests.
+- `flutter test`: passed, 61 tests.
 
 Test coverage currently includes:
 
@@ -331,6 +331,7 @@ Test coverage currently includes:
 - repository JSON round-trip and malformed data handling,
 - local preferences JSON round-trip and persisted large-text mode,
 - profile backup file creation/share,
+- profile backup failure feedback,
 - merge/replace restore strategy,
 - restore from selected `.drop4up` file,
 - restore from pasted backup,
@@ -347,6 +348,8 @@ Latest QA screenshots exist under `handoff/screenshots/`, including:
 - `handoff/screenshots/qa_profile_393x873.png`
 - `handoff/screenshots/drop_qa_393x873.png`
 - `handoff/screenshots/drop_qa_360x800.png`
+- `handoff/screenshots/journal_qa_360x800.png`
+- `handoff/screenshots/profile_qa_360x800.png`
 - `handoff/screenshots/drop_taxonomy_393x873.png`
 - `handoff/screenshots/journal_taxonomy_393x873.png`
 - `handoff/screenshots/profile_main_functions_393x873.png`
@@ -365,6 +368,12 @@ Secondary size represented for Drop:
 
 ```text
 360 x 800 logical px
+```
+
+Secondary size represented for beta QA:
+
+```text
+Drop, Journal, and Profile at 360 x 800 logical px
 ```
 
 Screenshot QA note:
@@ -398,7 +407,7 @@ Prototype decisions:
 Prototype gaps:
 
 - Screenshot QA exists for the main screens and the visual-card-dialog after the 2026-05-16 export/share update.
-- The local-only beta checklist marks 360 x 800 Journal and Profile screenshot QA as remaining manual items.
+- The local-only beta checklist now has the 360 x 800 Drop, Journal, and Profile QA items checked.
 
 Technical alignment item:
 
@@ -407,7 +416,7 @@ Technical alignment item:
 Repository status note:
 
 - The freeze package was committed locally as `f8aa53f` (`Freeze Drop4Up UI prototype`).
-- Local-only beta hardening now includes Drop save-failure UI feedback, widget coverage, and `handoff/BETA_CHECKLIST.md`.
+- Local-only beta hardening now includes Drop save-failure UI feedback, Profile backup failure widget coverage, 360 x 800 Journal/Profile screenshots, and `handoff/BETA_CHECKLIST.md`.
 - Existing untracked screenshot/reference artifacts under `handoff/` remain untouched unless a later cleanup request explicitly includes them.
 - No git remote is configured, so push/PR work requires adding or configuring a remote first.
 
@@ -415,8 +424,8 @@ Repository status note:
 
 Highest-value next steps:
 
-1. Complete the remaining 360 x 800 Journal and Profile screenshot QA items in `handoff/BETA_CHECKLIST.md`.
-2. Continue local-only beta hardening around repository/backup/restore edge cases only when they do not require schema changes.
+1. Continue local-only beta hardening around repository/backup/restore edge cases only when they do not require schema changes.
+2. Run a manual device pass on the intended beta device before distributing an APK or web preview.
 3. Add/configure a git remote if the local review commits should be pushed.
 4. Keep backend, login, AI, OCR, cloud sync, payments, social features, and speech-to-text out of scope unless the prototype phase is explicitly complete.
 
@@ -435,3 +444,5 @@ Recently completed:
 - Created local review commit `f8aa53f` for the freeze package.
 - Added Drop save-failure feedback with draft preservation for the local-only beta hardening pass.
 - Added `handoff/BETA_CHECKLIST.md`.
+- Captured 360 x 800 Journal/Profile beta QA screenshots.
+- Added Profile backup failure widget coverage.

@@ -60,8 +60,8 @@ Primary 393 x 873 pass:
 Secondary 360 x 800 pass:
 
 - [x] Drop main screen.
-- [ ] Journal main screen.
-- [ ] Profile main screen.
+- [x] Journal main screen.
+- [x] Profile main screen.
 
 Core local beta flows:
 
