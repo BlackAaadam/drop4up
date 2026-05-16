@@ -352,8 +352,8 @@ class _ProfileFooter extends StatelessWidget {
     return Drop4UpTactileSurface(
       variant: Drop4UpTactileSurfaceVariant.inset,
       radius: 24,
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: Drop4UpTokens.cardSurface,
       child: Row(
         children: [
@@ -366,10 +366,11 @@ class _ProfileFooter extends StatelessWidget {
           Expanded(
             child: Text(
               'Prototype 資料只會留在本機，除非你自行複製備份。',
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: textTheme.bodyMedium?.copyWith(
-                fontSize: 14,
+                fontSize: 13.5,
+                height: 1.28,
                 color: Drop4UpTokens.textSecondary,
               ),
             ),

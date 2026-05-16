@@ -1,6 +1,6 @@
 # Drop4Up Current Handoff Plan
 
-Last updated: 2026-05-16
+Last updated: 2026-05-17
 
 ## Current App Snapshot
 
@@ -24,7 +24,7 @@ Latest verification:
 
 - `flutter pub get`: passed.
 - `flutter analyze`: passed.
-- `flutter test`: passed with 58 tests.
+- `flutter test`: passed with 59 tests.
 
 ## Recently Completed
 
@@ -37,6 +37,11 @@ Latest verification:
 - Inset shadow package naming was aligned to `flutter_inset_box_shadow`.
 - Home reflection card gained entry rotation.
 - Drop gained in-session draft retention across tab changes.
+- Refreshed visual QA evidence with `handoff/screenshots/visual_card_dialog_393x873.png`.
+- Completed a narrow visual polish pass for Drop source chips and Profile footer readability.
+- Locked Drop draft behavior as intentionally session-only.
+- Locked Profile preferences scope to large-text mode only for this prototype phase.
+- Completed stage-ready prototype freeze cleanup without creating a commit.
 
 ## Remaining Gaps
 
@@ -44,41 +49,47 @@ Product gaps that are intentionally out of scope:
 
 - No backend, login, cloud sync, production database, AI, OCR, speech-to-text, push notifications, payments, social features, streaks, ranks, badges, likes, or comments.
 
+Prototype decisions:
+
+- Drop draft state is intentionally in-session only and does not survive app restart.
+- Preferences intentionally include large-text mode only; reduce motion and default Drop source stay backlog candidates.
+
 Prototype gaps still worth considering:
 
-- The visual-card-dialog screenshot at 393 x 873 is still missing because browser/CDP screenshot capture previously timed out.
-- Drop draft state is in-session only and does not survive app restart.
-- Preferences currently include large-text mode only.
-- Latest screenshot artifacts should be reviewed against the visual quality bar before declaring the prototype visually frozen.
+- Latest screenshot artifacts can still be reviewed as part of a final visual-freeze pass.
 - The working tree contains accumulated modified/untracked implementation and handoff artifacts; do not delete or reset them without an explicit cleanup request.
 
 ## Next Implementation Plan
 
-### Step 1 - Refresh Visual QA Evidence
+### Step 1 - Refresh Visual QA Evidence - Done
 
 Goal: close the remaining screenshot gap and make the handoff visually auditable.
 
-Tasks:
+Completed:
 
-- Run the app at 393 x 873 logical pixels.
-- Open Journal, create or use an entry, open the visual card dialog, and capture the missing dialog screenshot if the browser path is reliable.
-- Save the screenshot under `handoff/screenshots/` with a clear filename.
-- If screenshot capture still times out, keep the current documented limitation and do not block functional work.
+- Ran the app through a temporary QA entrypoint at 393 x 873 logical pixels.
+- Opened Journal, opened an entry, opened the visual card dialog, and captured the dialog.
+- Saved the screenshot as `handoff/screenshots/visual_card_dialog_393x873.png`.
+- Verified the full dialog, preview card, and action buttons fit without overflow or cramped layout.
 
 Acceptance:
 
 - Existing automated tests still pass.
-- If a screenshot is captured, it shows the full dialog without button overflow or cramped card layout.
+- Screenshot shows the full dialog without button overflow or cramped card layout.
 
-### Step 2 - Visual Polish Pass
+### Step 2 - Visual Polish Pass - Done
 
 Goal: tune only visible parameters after reviewing current 393 x 873 screenshots.
 
-Tasks:
+Completed:
 
 - Compare Home, Drop, Journal, Profile, and visual-card-dialog screenshots against the visual quality bar.
-- Tune only spacing, radius, shadow opacity/blur, typography size, or chip/button density.
-- Do not rewrite architecture unless a component abstraction is directly causing a visual defect.
+- Tuned Drop source chip density so all five source chips are visible at 393 px without right-edge text clipping.
+- Removed the horizontal chip-row fade mask that made partially visible chip text look like overflow.
+- Gave the Profile footer a two-line layout so the local-data note remains readable on 393 px.
+- Added visual QA screenshots:
+  - `handoff/screenshots/step2_drop_polish_393x873.png`
+  - `handoff/screenshots/step2_profile_polish_393x873.png`
 
 Acceptance:
 
@@ -86,54 +97,50 @@ Acceptance:
 - No text overflows in buttons, chips, dialogs, or bottom navigation.
 - `flutter analyze` and `flutter test` pass.
 
-### Step 3 - Decide Drop Draft Persistence
+### Step 3 - Decide Drop Draft Persistence - Done
 
 Goal: make an explicit product decision instead of leaving draft behavior ambiguous.
 
-Option A: keep current in-session draft.
+Decision: keep current in-session draft.
 
-- Update docs to mark this as intentional.
-- No new data model is needed.
+- Switching tabs keeps unsaved text, selected source, selected date, and selected/manual tags in the current app session.
+- Restarting or recreating the app shell does not restore unsaved Drop draft content.
+- No draft repository, draft JSON, persisted schema, or new data model is added.
+- Added widget coverage for the session-only decision.
 
-Option B: persist Drop draft locally.
-
-- Add a small local draft repository.
-- Preserve exact draft text, selected source, selected date, and selected/manual tags.
-- Clear persisted draft only after successful save.
-- Add repository and widget tests.
-
-Recommended default: keep in-session only unless user testing shows restart-surviving drafts are needed.
-
-### Step 4 - Preferences Expansion Decision
+### Step 4 - Preferences Expansion Decision - Done
 
 Goal: keep preferences useful without turning Profile into a settings-heavy app.
 
-Candidate local-only preferences:
+Decision: do not expand preferences in this prototype phase.
 
-- Large text: already done.
-- Reduce motion: possible if animations become distracting.
-- Default Drop source: possible if repeated capture friction appears in testing.
+- Large text remains the only intentional local preference.
+- Reduce motion remains a future backlog candidate if animations become distracting.
+- Default Drop source remains a future backlog candidate if repeated capture friction appears in user testing.
 
 Acceptance:
 
-- Any new preference must be local-only, testable, and clearly useful for the calm journal prototype.
-- Do not add account, sync, notification, gamification, or analytics settings.
+- No account, sync, notification, gamification, or analytics settings are added.
 
-### Step 5 - Handoff Cleanup Before Commit
+### Step 5 - Handoff Cleanup Before Commit - Done
 
 Goal: make the branch easier to review when the user asks for staging or commit.
 
-Tasks:
+Completed:
 
-- Review `git status --short`.
-- Decide which untracked screenshots/reference files belong in handoff.
-- Do not delete existing untracked artifacts without explicit instruction.
-- Update `handoff/CURRENT_APP_STATUS.md` after any new implementation or screenshot QA.
+- Reviewed `git status --short` and staged only the planned freeze files.
+- Staged tracked code/docs/test changes plus the latest QA screenshots:
+  - `handoff/screenshots/visual_card_dialog_393x873.png`
+  - `handoff/screenshots/step2_drop_polish_393x873.png`
+  - `handoff/screenshots/step2_profile_polish_393x873.png`
+- Left `gfxinfo_*.txt`, `handoff/references/logo.png`, `handoff/references/prototype/`, and older/date-picker/taxonomy QA screenshots untracked and untouched.
+- Did not create a branch or commit.
 
 Acceptance:
 
 - Handoff docs match the actual app behavior and test count.
 - No unrelated generated files are staged by accident.
+- Workspace is stage-ready for a future commit request.
 
 ## Standard Verification
 

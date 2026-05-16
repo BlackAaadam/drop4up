@@ -96,6 +96,32 @@ void main() {
     expect(_dropInputText(tester), isEmpty);
   });
 
+  testWidgets('Drop draft is intentionally session-only', (tester) async {
+    final repository = TestReflectionEntryRepository();
+    const text = '  Session-only draft should not survive app restart.  ';
+
+    await _pumpApp(tester, repository: repository);
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+    await tester.enterText(find.byKey(const Key('drop_text_input')), text);
+
+    await tester.tap(find.text('Journal'));
+    await _pumpUi(tester);
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+
+    expect(_dropInputText(tester), text);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpUi(tester);
+    await _pumpApp(tester, repository: repository);
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+
+    expect(_dropInputText(tester), isEmpty);
+    expect((await repository.load()).entries, isEmpty);
+  });
+
   testWidgets('saved entry appears in Journal', (tester) async {
     await _pumpHarness(tester);
     const text = '今天安靜記下一句，不改寫。';
@@ -237,6 +263,15 @@ Future<_Harness> _pumpHarness(WidgetTester tester) async {
 
   final repository = TestReflectionEntryRepository();
 
+  await _pumpApp(tester, repository: repository);
+
+  return _Harness(repository);
+}
+
+Future<void> _pumpApp(
+  WidgetTester tester, {
+  required TestReflectionEntryRepository repository,
+}) async {
   var nextId = 0;
   await tester.pumpWidget(
     Drop4UpPreviewApp(
@@ -246,8 +281,6 @@ Future<_Harness> _pumpHarness(WidgetTester tester) async {
     ),
   );
   await _pumpUi(tester);
-
-  return _Harness(repository);
 }
 
 Future<void> _pumpUi(WidgetTester tester) async {

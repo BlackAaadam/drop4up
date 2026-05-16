@@ -262,8 +262,7 @@ class _DropEntryCardState extends State<_DropEntryCard> {
           const SizedBox(height: 12),
           _HorizontalChipRow(
             height: 42,
-            spacing: 8,
-            endPadding: 34,
+            spacing: 6,
             children: [
               for (
                 var index = 0;
@@ -286,7 +285,6 @@ class _DropEntryCardState extends State<_DropEntryCard> {
           _HorizontalChipRow(
             height: 34,
             spacing: 7,
-            endPadding: 22,
             children: [
               for (var index = 0; index < _manualTags.length; index++)
                 _ManualTagChip(
@@ -641,13 +639,11 @@ class _HorizontalChipRow extends StatelessWidget {
     required this.children,
     required this.spacing,
     required this.height,
-    this.endPadding = 0,
   });
 
   final List<Widget> children;
   final double spacing;
   final double height;
-  final double endPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -665,7 +661,6 @@ class _HorizontalChipRow extends StatelessWidget {
                 if (index > 0) SizedBox(width: spacing),
                 children[index],
               ],
-              if (endPadding > 0) SizedBox(width: endPadding),
             ],
           ),
         ),
@@ -675,20 +670,7 @@ class _HorizontalChipRow extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: height,
-      child: ClipRect(
-        child: ShaderMask(
-          blendMode: BlendMode.dstIn,
-          shaderCallback: (bounds) {
-            return const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [Colors.black, Colors.black, Colors.transparent],
-              stops: [0, 0.88, 1],
-            ).createShader(bounds);
-          },
-          child: scrollRow,
-        ),
-      ),
+      child: ClipRect(child: scrollRow),
     );
   }
 }
@@ -707,7 +689,7 @@ class _SourceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final horizontalPadding = selected ? 17.0 : 20.0;
+    final horizontalPadding = selected ? 11.0 : 12.0;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -720,19 +702,19 @@ class _SourceChip extends StatelessWidget {
             ? Drop4UpTokens.lightBlue.withValues(alpha: 0.36)
             : Drop4UpTokens.cardSurface,
         radius: Drop4UpTokens.pillRadius,
-        height: 39,
+        height: 38,
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (selected) ...[
               Icon(source.icon, size: 17, color: Drop4UpTokens.primaryBlue),
-              const SizedBox(width: 7),
+              const SizedBox(width: 6),
             ],
             Text(
               source.label,
               style: textTheme.labelMedium?.copyWith(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: selected
                     ? Drop4UpTokens.textPrimary

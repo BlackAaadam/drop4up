@@ -1,6 +1,6 @@
 # Drop4Up App Current Status
 
-Last updated: 2026-05-16
+Last updated: 2026-05-17
 
 ## 1. One-line Status
 
@@ -21,12 +21,12 @@ Estimated state by milestone:
 | Soft surface system | Done | `SoftSurface`, `Drop4UpTactileSurface`, tactile chips/buttons/nav are implemented. |
 | 4-tab shell | Done | Exactly `Home / Drop / Journal / Profile`; no center floating Drop button. |
 | Home | Functional prototype | Visual reflection card, generated tags, tag selection, carousel-style entry rotation, Journal/Profile handoff. |
-| Drop | Functional prototype | Text capture, source chips, manual tags, custom tag dialog, in-session draft retention, local save. |
+| Drop | Functional prototype | Text capture, source chips, manual tags, custom tag dialog, intentional session-only draft retention, local save. |
 | Journal | Functional prototype | Search, filters, favorite, edit, delete, visual card preview, PNG export/share. |
 | Profile | Functional prototype | Local stats, backup file creation/share, merge/replace restore from file or pasted backup, persisted large-text preference, about. |
 | Local persistence | Functional prototype | JSON document storage through repository/controller plus local preferences storage. |
-| Automated tests | Passing | `flutter test` passed with 58 tests. |
-| Screenshot QA | Present | 393x873 screenshots exist for all main screens. |
+| Automated tests | Passing | `flutter test` passed with 59 tests. |
+| Screenshot QA | Present | 393x873 screenshots exist for all main screens and the visual-card-dialog. |
 | Production readiness | Not started | No auth, backend, real AI/OCR/STT, cloud sync, analytics, payments, release hardening. |
 
 ## 3. Implemented App Structure
@@ -301,13 +301,13 @@ Results:
 
 - `flutter pub get`: passed.
 - `flutter analyze`: passed, no issues found.
-- `flutter test`: passed, 58 tests.
+- `flutter test`: passed, 59 tests.
 
 Test coverage currently includes:
 
 - baseline four-tab navigation,
 - Drop save creates entries,
-- Drop in-session draft survives tab changes until save,
+- Drop session-only draft survives tab changes but does not persist across app recreation,
 - saved entries appear in Journal,
 - reload loads persisted entries,
 - exact Traditional Chinese text preservation,
@@ -347,6 +347,9 @@ Latest QA screenshots exist under `handoff/screenshots/`, including:
 - `handoff/screenshots/drop_taxonomy_393x873.png`
 - `handoff/screenshots/journal_taxonomy_393x873.png`
 - `handoff/screenshots/profile_main_functions_393x873.png`
+- `handoff/screenshots/visual_card_dialog_393x873.png`
+- `handoff/screenshots/step2_drop_polish_393x873.png`
+- `handoff/screenshots/step2_profile_polish_393x873.png`
 - Phase 2/3 interaction screenshots for save, search, favorite, edit, delete, and no-result states.
 
 Primary visual target already represented:
@@ -364,7 +367,9 @@ Secondary size represented for Drop:
 Screenshot QA note:
 
 - Programmatic verification passed after the visual card PNG export/share work.
-- A fresh 393 x 873 screenshot for the visual card dialog has not been added yet because the in-app browser/CDP screenshot capture timed out during manual QA.
+- A fresh 393 x 873 visual-card-dialog screenshot was captured on 2026-05-16 through a temporary QA entrypoint and local headless Chrome.
+- The dialog screenshot shows the full preview card and action buttons without visible overflow or cramped layout.
+- A narrow Step 2 polish pass was captured on 2026-05-16; Drop source chips now fit without right-edge clipping, and the Profile footer note uses a readable two-line layout.
 
 ## 13. Known Gaps and Risks
 
@@ -382,11 +387,14 @@ Product/function gaps:
 - No onboarding.
 - No production privacy/security review.
 
+Prototype decisions:
+
+- Drop draft handling is intentionally in-session only and is not persisted after app restart.
+- Preferences intentionally include large-text mode only during this prototype phase.
+
 Prototype gaps:
 
-- Drop draft handling is in-session only and is not persisted after app restart.
-- Preferences currently include large-text mode only.
-- Screenshot QA exists for the main screens, but this file does not include a fresh visual card dialog screenshot after the 2026-05-16 export/share update.
+- Screenshot QA exists for the main screens and the visual-card-dialog after the 2026-05-16 export/share update.
 
 Technical alignment item:
 
@@ -394,19 +402,15 @@ Technical alignment item:
 
 Repository status note:
 
-- Before this document was added, `git status --short` showed existing untracked screenshot/reference artifacts under `handoff/`.
-- Those artifacts appear to be handoff/QA outputs and were not modified by this status document.
+- The current freeze package is stage-ready: tracked code/docs/test changes and the three latest QA screenshots are staged.
+- Existing untracked screenshot/reference artifacts under `handoff/` remain untouched unless a later cleanup request explicitly includes them.
 
 ## 14. Recommended Next Work
 
 Highest-value next steps:
 
-1. Refresh visual QA evidence, especially the missing 393 x 873 visual-card-dialog screenshot if browser/CDP capture becomes reliable.
-2. Review the latest 393 x 873 screenshots against the visual quality bar and tune spacing/shadow/color only where needed.
-3. Decide whether Drop draft state should remain in-session only or become a local persisted draft.
-4. Decide whether preferences need additional local-only controls beyond large text, such as reduce motion or default Drop source.
-5. Clean up handoff/staging only when explicitly requested; preserve existing untracked screenshots/reference artifacts until then.
-6. Keep backend, login, AI, OCR, cloud sync, payments, social features, and speech-to-text out of scope unless the prototype phase is explicitly complete.
+1. Create a review commit from the staged freeze package when requested.
+2. Keep backend, login, AI, OCR, cloud sync, payments, social features, and speech-to-text out of scope unless the prototype phase is explicitly complete.
 
 Recently completed:
 
@@ -417,3 +421,7 @@ Recently completed:
 - Aligned inset shadow dependency naming to `flutter_inset_box_shadow`.
 - Added Home reflection entry rotation.
 - Added in-session Drop draft retention across tab changes.
+- Captured `handoff/screenshots/visual_card_dialog_393x873.png`.
+- Completed Step 2 visual polish for Drop source chips and Profile footer readability.
+- Marked Drop draft as intentionally session-only and kept Profile preferences limited to large text.
+- Completed stage-ready prototype freeze cleanup without creating a commit.
