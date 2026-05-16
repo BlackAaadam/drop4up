@@ -62,6 +62,40 @@ void main() {
     expect(entry.updatedAt, DateTime.utc(2026, 5, 7, 12));
   });
 
+  testWidgets('Drop draft survives tab changes until save', (tester) async {
+    final harness = await _pumpHarness(tester);
+    const text = '  Draft text stays while I review Journal.\nAmen.  ';
+
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+    await tester.enterText(find.byKey(const Key('drop_text_input')), text);
+    await tester.tap(find.byKey(const Key('drop_add_tag_button')));
+    await _pumpUi(tester);
+    await tester.enterText(
+      find.byKey(const Key('drop_add_tag_input')),
+      '#draft-tag',
+    );
+    await tester.tap(find.byKey(const Key('drop_add_tag_confirm_button')));
+    await _pumpUi(tester);
+
+    await tester.tap(find.text('Journal'));
+    await _pumpUi(tester);
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+
+    expect(_dropInputText(tester), text);
+    expect(find.text('#draft-tag'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('save_drop_button')));
+    await _pumpUi(tester);
+
+    final entry = (await harness.repository.load()).entries.single;
+
+    expect(entry.text, text);
+    expect(entry.tags, const ['draft-tag']);
+    expect(_dropInputText(tester), isEmpty);
+  });
+
   testWidgets('saved entry appears in Journal', (tester) async {
     await _pumpHarness(tester);
     const text = '今天安靜記下一句，不改寫。';
@@ -226,6 +260,13 @@ String _dateKey(DateTime date) {
 }
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+String _dropInputText(WidgetTester tester) {
+  final textField = tester.widget<TextField>(
+    find.byKey(const Key('drop_text_input')),
+  );
+  return textField.controller?.text ?? '';
+}
 
 class _Harness {
   const _Harness(this.repository);

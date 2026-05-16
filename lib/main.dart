@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'dart:ui' as ui;
 
+import 'data/drop4up_preferences_repository.dart';
 import 'data/reflection_entry_repository.dart';
 import 'data/profile_backup_file_service.dart';
+import 'data/visual_card_share_service.dart';
 import 'screens/drop_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal_screen.dart';
 import 'screens/profile_screen.dart';
+import 'state/drop4up_preferences_controller.dart';
+import 'state/drop4up_preferences_scope.dart';
 import 'state/reflection_entries_controller.dart';
 import 'state/reflection_entries_scope.dart';
 import 'ui/drop4up_scaffold.dart';
@@ -59,13 +63,19 @@ class Drop4UpPreviewApp extends StatefulWidget {
   const Drop4UpPreviewApp({
     super.key,
     this.repository,
+    this.preferencesRepository,
     this.profileBackupFileService,
+    this.visualCardShareService,
+    this.visualCardPngCapture,
     this.clock,
     this.idGenerator,
   });
 
   final ReflectionEntryRepository? repository;
+  final Drop4UpPreferencesRepository? preferencesRepository;
   final ProfileBackupFileService? profileBackupFileService;
+  final VisualCardShareService? visualCardShareService;
+  final VisualCardPngCapture? visualCardPngCapture;
   final ReflectionClock? clock;
   final ReflectionIdGenerator? idGenerator;
 
@@ -75,6 +85,7 @@ class Drop4UpPreviewApp extends StatefulWidget {
 
 class _Drop4UpPreviewAppState extends State<Drop4UpPreviewApp> {
   late final ReflectionEntriesController _entriesController;
+  late final Drop4UpPreferencesController _preferencesController;
 
   @override
   void initState() {
@@ -84,37 +95,56 @@ class _Drop4UpPreviewAppState extends State<Drop4UpPreviewApp> {
       clock: widget.clock,
       idGenerator: widget.idGenerator,
     );
+    _preferencesController = Drop4UpPreferencesController(
+      repository:
+          widget.preferencesRepository ?? Drop4UpPreferencesRepository(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _entriesController.load();
+      _preferencesController.load();
     });
   }
 
   @override
   void dispose() {
     _entriesController.dispose();
+    _preferencesController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Drop4UpTokens.textTheme();
-
     return ReflectionEntriesScope(
       controller: _entriesController,
-      child: MaterialApp(
-        title: 'Drop4Up',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          scaffoldBackgroundColor: Drop4UpTokens.background,
-          textTheme: textTheme,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Drop4UpTokens.primaryBlue,
-            surface: Drop4UpTokens.cardSurface,
-          ),
-        ),
-        home: ShellPreviewScreen(
-          profileBackupFileService: widget.profileBackupFileService,
+      child: Drop4UpPreferencesScope(
+        controller: _preferencesController,
+        child: AnimatedBuilder(
+          animation: _preferencesController,
+          builder: (context, _) {
+            final textScale = _preferencesController.preferences.largeText
+                ? 1.08
+                : 1.0;
+            final textTheme = Drop4UpTokens.textTheme(textScale: textScale);
+
+            return MaterialApp(
+              title: 'Drop4Up',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                useMaterial3: true,
+                scaffoldBackgroundColor: Drop4UpTokens.background,
+                textTheme: textTheme,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: Drop4UpTokens.primaryBlue,
+                  surface: Drop4UpTokens.cardSurface,
+                ),
+              ),
+              home: ShellPreviewScreen(
+                profileBackupFileService: widget.profileBackupFileService,
+                visualCardShareService: widget.visualCardShareService,
+                visualCardPngCapture: widget.visualCardPngCapture,
+              ),
+            );
+          },
         ),
       ),
     );
@@ -122,9 +152,16 @@ class _Drop4UpPreviewAppState extends State<Drop4UpPreviewApp> {
 }
 
 class ShellPreviewScreen extends StatefulWidget {
-  const ShellPreviewScreen({super.key, this.profileBackupFileService});
+  const ShellPreviewScreen({
+    super.key,
+    this.profileBackupFileService,
+    this.visualCardShareService,
+    this.visualCardPngCapture,
+  });
 
   final ProfileBackupFileService? profileBackupFileService;
+  final VisualCardShareService? visualCardShareService;
+  final VisualCardPngCapture? visualCardPngCapture;
 
   @override
   State<ShellPreviewScreen> createState() => _ShellPreviewScreenState();
@@ -133,6 +170,7 @@ class ShellPreviewScreen extends StatefulWidget {
 class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
   int _tabIndex = 0;
   String? _initialJournalFilter;
+  final DropDraftController _dropDraftController = DropDraftController();
 
   static const _tabs = [
     _ShellTab('Home', 'Visual reflection placeholder'),
@@ -152,11 +190,17 @@ class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
         0 => HomeScreen(
           onOpenJournalAll: _openJournalAll,
           onOpenJournalTag: _openJournalTag,
+          onOpenProfile: _openProfile,
         ),
-        1 => const DropScreen(),
+        1 => DropScreen(
+          draftController: _dropDraftController,
+          onOpenProfile: _openProfile,
+        ),
         2 => JournalScreen(
           initialTaxonomyFilter: _initialJournalFilter,
           onInitialFilterConsumed: _clearInitialJournalFilter,
+          visualCardShareService: widget.visualCardShareService,
+          visualCardPngCapture: widget.visualCardPngCapture,
         ),
         3 => ProfileScreen(backupFileService: widget.profileBackupFileService),
         _ => _ShellPlaceholder(tab: tab),
@@ -176,6 +220,10 @@ class _ShellPreviewScreenState extends State<ShellPreviewScreen> {
       _initialJournalFilter = tag;
       _tabIndex = 2;
     });
+  }
+
+  void _openProfile() {
+    setState(() => _tabIndex = 3);
   }
 
   void _clearInitialJournalFilter() {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart' hide BoxDecoration, BoxShadow;
-import 'package:flutter_inset_shadow/flutter_inset_shadow.dart';
+import 'package:flutter_inset_box_shadow/flutter_inset_box_shadow.dart';
 
 const _navPressDuration = Duration(milliseconds: 100);
 const _navTextDuration = Duration(milliseconds: 150);

@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:drop4up/data/reflection_entry.dart';
+import 'package:drop4up/data/visual_card_share_service.dart';
 import 'package:drop4up/main.dart';
+import 'package:drop4up/screens/journal_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -357,6 +361,74 @@ void main() {
     );
   });
 
+  testWidgets('visual card preview shares png and keeps exact preview text', (
+    tester,
+  ) async {
+    const previewText = '  Visual card keeps this text.\nDo not rewrite.  ';
+    final visualCardShareService = _FakeVisualCardShareService();
+    await _pumpJournalHarness(
+      tester,
+      visualCardShareService: visualCardShareService,
+      visualCardPngCapture: (_) async =>
+          Uint8List.fromList(const [137, 80, 78, 71]),
+      entries: [
+        _entry(
+          id: 'entry-share',
+          text: previewText,
+          source: '雓?',
+          tags: const ['撟喳?'],
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('journal_entry_entry-share')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_visual_card_button')));
+    await _pumpUi(tester);
+
+    final preview = tester.widget<Text>(
+      find.byKey(const Key('visual_card_preview_text')),
+    );
+    expect(find.byKey(const Key('visual_card_share_button')), findsOneWidget);
+    expect(preview.data, previewText);
+    expect(preview.data!.codeUnits, previewText.codeUnits);
+
+    await tester.tap(find.byKey(const Key('visual_card_share_button')));
+    await _pumpUi(tester);
+
+    expect(visualCardShareService.sharedBytes, [137, 80, 78, 71]);
+    expect(visualCardShareService.shareCount, 1);
+    expect(find.text('視覺卡片已建立。'), findsOneWidget);
+  });
+
+  testWidgets('visual card share failure shows error and keeps dialog open', (
+    tester,
+  ) async {
+    final visualCardShareService = _FakeVisualCardShareService(
+      shouldFail: true,
+    );
+    await _pumpJournalHarness(
+      tester,
+      visualCardShareService: visualCardShareService,
+      visualCardPngCapture: (_) async =>
+          Uint8List.fromList(const [137, 80, 78, 71]),
+      entries: [_entry(id: 'entry-share-fail', text: 'Share failure text.')],
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('journal_entry_entry-share-fail')),
+    );
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('entry_visual_card_button')));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('visual_card_share_button')));
+    await _pumpUi(tester);
+
+    expect(find.byKey(const Key('visual_card_preview')), findsOneWidget);
+    expect(find.byKey(const Key('visual_card_share_error')), findsOneWidget);
+    expect(find.text('視覺卡片暫時無法建立，請稍後再試。'), findsOneWidget);
+  });
+
   testWidgets('favorite persists after reload', (tester) async {
     final repository = await _pumpJournalHarness(
       tester,
@@ -397,9 +469,37 @@ void main() {
   });
 }
 
+class _FakeVisualCardShareService extends VisualCardShareService {
+  _FakeVisualCardShareService({this.shouldFail = false});
+
+  final bool shouldFail;
+  Uint8List? sharedBytes;
+  int shareCount = 0;
+
+  @override
+  Future<VisualCardFile> writeAndSharePng({
+    required Uint8List pngBytes,
+    DateTime? exportedAt,
+    Rect? sharePositionOrigin,
+  }) async {
+    shareCount += 1;
+    sharedBytes = Uint8List.fromList(pngBytes);
+    if (shouldFail) {
+      throw StateError('share failed');
+    }
+    return VisualCardFile(
+      path: 'fake.png',
+      fileName: 'Drop4Up_Visual_2026-05-09_1234.png',
+      exportedAt: DateTime(2026, 5, 9, 12, 34),
+    );
+  }
+}
+
 Future<TestReflectionEntryRepository> _pumpJournalHarness(
   WidgetTester tester, {
   required List<ReflectionEntry> entries,
+  VisualCardShareService? visualCardShareService,
+  VisualCardPngCapture? visualCardPngCapture,
 }) async {
   tester.view.physicalSize = const Size(393, 873);
   tester.view.devicePixelRatio = 1;
@@ -411,6 +511,8 @@ Future<TestReflectionEntryRepository> _pumpJournalHarness(
   await tester.pumpWidget(
     Drop4UpPreviewApp(
       repository: repository,
+      visualCardShareService: visualCardShareService,
+      visualCardPngCapture: visualCardPngCapture,
       clock: () => DateTime.utc(2026, 5, 7, 12, 30),
     ),
   );

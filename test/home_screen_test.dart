@@ -52,6 +52,50 @@ void main() {
     },
   );
 
+  testWidgets('Home reflection carousel cycles through recent entries', (
+    tester,
+  ) async {
+    await _pumpHomeHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'latest-entry',
+          text: '最新的一滴。',
+          source: '講道',
+          createdAt: DateTime.utc(2026, 5, 9, 9),
+        ),
+        _entry(
+          id: 'favorite-entry',
+          text: '收藏的一滴。',
+          source: '禱告',
+          createdAt: DateTime.utc(2026, 5, 8, 9),
+          isFavorite: true,
+        ),
+        _entry(
+          id: 'older-entry',
+          text: '較早的一滴。',
+          source: '閱讀',
+          createdAt: DateTime.utc(2026, 5, 7, 9),
+        ),
+      ],
+    );
+
+    expect(find.text('收藏的一滴。'), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_reflection_dot_0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_reflection_dot_1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_reflection_dot_2')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('home_reflection_next_button')));
+    await _pumpUi(tester);
+
+    expect(find.text('最新的一滴。'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('home_reflection_dot_2')));
+    await _pumpUi(tester);
+
+    expect(find.text('較早的一滴。'), findsOneWidget);
+  });
+
   testWidgets('Home tags are generated from source and tags', (tester) async {
     await _pumpHomeHarness(
       tester,
@@ -116,6 +160,53 @@ void main() {
     expect(find.text('平安相關的一滴。'), findsOneWidget);
     expect(find.text('2026.05.09  ·  平安'), findsOneWidget);
     expect(find.byKey(const Key('journal_search_input')), findsNothing);
+  });
+
+  testWidgets('Home tag selection resets carousel to matching entries', (
+    tester,
+  ) async {
+    await _pumpHomeHarness(
+      tester,
+      entries: [
+        _entry(
+          id: 'peace-new',
+          text: '新的平安回望。',
+          source: '講道',
+          tags: const ['平安'],
+          createdAt: DateTime.utc(2026, 5, 9, 9),
+        ),
+        _entry(
+          id: 'peace-old',
+          text: '舊的平安回望。',
+          source: '閱讀',
+          tags: const ['平安'],
+          createdAt: DateTime.utc(2026, 5, 8, 9),
+        ),
+        _entry(
+          id: 'gratitude-favorite',
+          text: '收藏的感恩回望。',
+          source: '禱告',
+          tags: const ['感恩'],
+          createdAt: DateTime.utc(2026, 5, 7, 9),
+          isFavorite: true,
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('home_reflection_next_button')));
+    await _pumpUi(tester);
+    expect(find.text('新的平安回望。'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('home_tag_平安')));
+    await _pumpUi(tester);
+
+    expect(find.text('新的平安回望。'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('home_reflection_next_button')));
+    await _pumpUi(tester);
+
+    expect(find.text('舊的平安回望。'), findsOneWidget);
+    expect(find.text('收藏的感恩回望。'), findsNothing);
   });
 
   testWidgets('Home view all opens Journal with selected tag filter', (

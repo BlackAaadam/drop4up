@@ -1,6 +1,11 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../data/reflection_entry.dart';
+import '../data/visual_card_share_service.dart';
 import '../state/reflection_entries_scope.dart';
 import '../ui/drop4up_date_picker.dart';
 import '../ui/drop4up_dialog_route.dart';
@@ -10,15 +15,22 @@ import '../ui/reflection_taxonomy.dart';
 import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
+typedef VisualCardPngCapture =
+    Future<Uint8List> Function(GlobalKey boundaryKey);
+
 class JournalScreen extends StatefulWidget {
   const JournalScreen({
     super.key,
     this.initialTaxonomyFilter,
     this.onInitialFilterConsumed,
+    this.visualCardShareService,
+    this.visualCardPngCapture,
   });
 
   final String? initialTaxonomyFilter;
   final VoidCallback? onInitialFilterConsumed;
+  final VisualCardShareService? visualCardShareService;
+  final VisualCardPngCapture? visualCardPngCapture;
 
   @override
   State<JournalScreen> createState() => _JournalScreenState();
@@ -26,9 +38,16 @@ class JournalScreen extends StatefulWidget {
 
 class _JournalScreenState extends State<JournalScreen> {
   final TextEditingController _searchController = TextEditingController();
+  late final VisualCardShareService _defaultVisualCardShareService =
+      VisualCardShareService();
   String _query = '';
   _JournalFilter _filter = const _JournalFilter.all();
   bool _showAllEntries = false;
+
+  VisualCardShareService get _visualCardShareService =>
+      widget.visualCardShareService ?? _defaultVisualCardShareService;
+  VisualCardPngCapture get _visualCardPngCapture =>
+      widget.visualCardPngCapture ?? _captureVisualCardPng;
 
   @override
   void initState() {
@@ -163,6 +182,8 @@ class _JournalScreenState extends State<JournalScreen> {
             isLoaded: entriesController.isLoaded,
             hasAnyEntries: allEntries.isNotEmpty,
             entries: displayedEntries,
+            visualCardShareService: _visualCardShareService,
+            visualCardPngCapture: _visualCardPngCapture,
           ),
         ),
       ],
@@ -193,11 +214,15 @@ class _JournalResultsList extends StatelessWidget {
     required this.isLoaded,
     required this.hasAnyEntries,
     required this.entries,
+    required this.visualCardShareService,
+    required this.visualCardPngCapture,
   });
 
   final bool isLoaded;
   final bool hasAnyEntries;
   final List<ReflectionEntry> entries;
+  final VisualCardShareService visualCardShareService;
+  final VisualCardPngCapture visualCardPngCapture;
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +250,11 @@ class _JournalResultsList extends StatelessWidget {
       padding: EdgeInsets.zero,
       itemCount: entries.length,
       separatorBuilder: (_, _) => const SizedBox(height: 9),
-      itemBuilder: (context, index) => _JournalEntryCard(entry: entries[index]),
+      itemBuilder: (context, index) => _JournalEntryCard(
+        entry: entries[index],
+        visualCardShareService: visualCardShareService,
+        visualCardPngCapture: visualCardPngCapture,
+      ),
     );
   }
 }
@@ -339,9 +368,15 @@ class _ActiveJournalFilterChip extends StatelessWidget {
 }
 
 class _JournalEntryCard extends StatelessWidget {
-  const _JournalEntryCard({required this.entry});
+  const _JournalEntryCard({
+    required this.entry,
+    required this.visualCardShareService,
+    required this.visualCardPngCapture,
+  });
 
   final ReflectionEntry entry;
+  final VisualCardShareService visualCardShareService;
+  final VisualCardPngCapture visualCardPngCapture;
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +386,12 @@ class _JournalEntryCard extends StatelessWidget {
       child: GestureDetector(
         key: ValueKey('journal_entry_${entry.id}'),
         behavior: HitTestBehavior.opaque,
-        onTap: () => _showEntryDetail(context, entry),
+        onTap: () => _showEntryDetail(
+          context,
+          entry,
+          visualCardShareService,
+          visualCardPngCapture,
+        ),
         child: _JournalEntrySurface(
           radius: 26,
           padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
@@ -478,6 +518,8 @@ class _JournalEntrySurface extends StatelessWidget {
 Future<void> _showEntryDetail(
   BuildContext context,
   ReflectionEntry entry,
+  VisualCardShareService visualCardShareService,
+  VisualCardPngCapture visualCardPngCapture,
 ) async {
   final controller = ReflectionEntriesScope.read(context);
   final textController = TextEditingController(text: entry.text);
@@ -563,7 +605,11 @@ Future<void> _showEntryDetail(
                         ),
                       ),
                       const SizedBox(width: 9),
-                      _InlineVisualCardButton(entry: entry),
+                      _InlineVisualCardButton(
+                        entry: entry,
+                        visualCardShareService: visualCardShareService,
+                        visualCardPngCapture: visualCardPngCapture,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -975,13 +1021,14 @@ class _DialogAction extends StatelessWidget {
 
   final String label;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool muted;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final color = muted
+    final disabled = onTap == null;
+    final color = muted || disabled
         ? Drop4UpTokens.textSecondary
         : Drop4UpTokens.primaryBlue;
 
@@ -994,7 +1041,7 @@ class _DialogAction extends StatelessWidget {
             : Drop4UpTactileSurfaceVariant.inset,
         radius: 20,
         height: 44,
-        color: muted
+        color: muted || disabled
             ? Drop4UpTokens.cardSurface
             : Drop4UpTokens.lightBlue.withValues(alpha: 0.34),
         child: Row(
@@ -1345,9 +1392,15 @@ class _MiniTag extends StatelessWidget {
 }
 
 class _InlineVisualCardButton extends StatelessWidget {
-  const _InlineVisualCardButton({required this.entry});
+  const _InlineVisualCardButton({
+    required this.entry,
+    required this.visualCardShareService,
+    required this.visualCardPngCapture,
+  });
 
   final ReflectionEntry entry;
+  final VisualCardShareService visualCardShareService;
+  final VisualCardPngCapture visualCardPngCapture;
 
   @override
   Widget build(BuildContext context) {
@@ -1359,7 +1412,12 @@ class _InlineVisualCardButton extends StatelessWidget {
       child: GestureDetector(
         key: const Key('entry_visual_card_button'),
         behavior: HitTestBehavior.opaque,
-        onTap: () => _showVisualCardPreview(context, entry),
+        onTap: () => _showVisualCardPreview(
+          context,
+          entry,
+          visualCardShareService,
+          visualCardPngCapture,
+        ),
         child: AnimatedContainer(
           duration: Drop4UpTokens.calmDuration,
           curve: Drop4UpTokens.calmCurve,
@@ -1429,7 +1487,18 @@ class _InlineVisualCardButton extends StatelessWidget {
 Future<void> _showVisualCardPreview(
   BuildContext context,
   ReflectionEntry? entry,
+  VisualCardShareService? visualCardShareService,
+  VisualCardPngCapture? visualCardPngCapture,
 ) {
+  if (visualCardShareService != null && visualCardPngCapture != null) {
+    return _showShareableVisualCardPreview(
+      context,
+      entry,
+      visualCardShareService,
+      visualCardPngCapture,
+    );
+  }
+
   return showDrop4UpDialog<void>(
     context: context,
     builder: (dialogContext) {
@@ -1486,6 +1555,172 @@ Future<void> _showVisualCardPreview(
       );
     },
   );
+}
+
+Future<void> _showShareableVisualCardPreview(
+  BuildContext context,
+  ReflectionEntry? entry,
+  VisualCardShareService visualCardShareService,
+  VisualCardPngCapture visualCardPngCapture,
+) {
+  return showDrop4UpDialog<void>(
+    context: context,
+    builder: (dialogContext) {
+      final textTheme = Theme.of(dialogContext).textTheme;
+      final cardBoundaryKey = GlobalKey();
+      var isSharing = false;
+      String? shareError;
+
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> shareVisualCard() async {
+              if (entry == null || isSharing) {
+                return;
+              }
+              setDialogState(() {
+                isSharing = true;
+                shareError = null;
+              });
+
+              try {
+                final sharePositionOrigin = _shareOriginFor(dialogContext);
+                final pngBytes = await visualCardPngCapture(cardBoundaryKey);
+                await visualCardShareService.writeAndSharePng(
+                  pngBytes: pngBytes,
+                  sharePositionOrigin: sharePositionOrigin,
+                );
+                if (!context.mounted) {
+                  return;
+                }
+                setDialogState(() => isSharing = false);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('視覺卡片已建立。')));
+              } catch (_) {
+                if (!context.mounted) {
+                  return;
+                }
+                setDialogState(() {
+                  isSharing = false;
+                  shareError = '視覺卡片暫時無法建立，請稍後再試。';
+                });
+              }
+            }
+
+            return SoftSurface(
+              variant: SoftSurfaceVariant.prominent,
+              radius: 30,
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('視覺卡片預覽', style: textTheme.titleMedium),
+                      ),
+                      SoftIconButton(
+                        icon: Icons.close_rounded,
+                        label: '關閉',
+                        size: 40,
+                        iconSize: 20,
+                        onTap: () => Navigator.of(dialogContext).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (entry == null)
+                    Text(
+                      '請先建立一則 Drop，再把它轉成安靜的視覺卡片。',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Drop4UpTokens.textSecondary,
+                      ),
+                    )
+                  else
+                    RepaintBoundary(
+                      key: cardBoundaryKey,
+                      child: _VisualCardPreview(entry: entry),
+                    ),
+                  if (isSharing) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      '正在建立視覺卡片...',
+                      key: const Key('visual_card_share_status'),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Drop4UpTokens.textSecondary,
+                      ),
+                    ),
+                  ],
+                  if (shareError != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      shareError!,
+                      key: const Key('visual_card_share_error'),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Drop4UpTokens.primaryBlue,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (entry != null) ...[
+                        SizedBox(
+                          width: 124,
+                          child: _DialogAction(
+                            key: const Key('visual_card_share_button'),
+                            label: isSharing ? '建立中' : '分享',
+                            icon: Icons.ios_share_rounded,
+                            onTap: isSharing ? null : shareVisualCard,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      SizedBox(
+                        width: 116,
+                        child: _DialogAction(
+                          label: '完成',
+                          icon: Icons.check_rounded,
+                          onTap: () => Navigator.of(dialogContext).pop(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
+}
+
+Future<Uint8List> _captureVisualCardPng(GlobalKey boundaryKey) async {
+  final renderObject = boundaryKey.currentContext?.findRenderObject();
+  if (renderObject is! RenderRepaintBoundary) {
+    throw StateError('Visual card boundary is not ready.');
+  }
+  final image = await renderObject.toImage(pixelRatio: 3);
+  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  if (byteData == null) {
+    throw StateError('Visual card PNG encoding failed.');
+  }
+  return byteData.buffer.asUint8List();
+}
+
+Rect? _shareOriginFor(BuildContext context) {
+  final renderObject = context.findRenderObject();
+  if (renderObject is! RenderBox) {
+    return null;
+  }
+  return renderObject.localToGlobal(Offset.zero) & renderObject.size;
 }
 
 class _VisualCardPreview extends StatelessWidget {

@@ -9,8 +9,42 @@ import '../ui/reflection_taxonomy.dart';
 import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
-class DropScreen extends StatelessWidget {
-  const DropScreen({super.key});
+class DropDraftController {
+  DropDraftController({DateTime? initialDate})
+    : selectedDate = initialDate ?? DateTime.now();
+
+  String text = '';
+  int selectedSourceIndex = 0;
+  final Set<int> selectedTagIndices = <int>{};
+  List<String> manualTags = List.of(reflectionSuggestedTags);
+  DateTime selectedDate;
+  bool hasCustomDate = false;
+
+  void reset({DateTime? selectedDate}) {
+    text = '';
+    selectedSourceIndex = 0;
+    selectedTagIndices.clear();
+    manualTags = List.of(reflectionSuggestedTags);
+    this.selectedDate = selectedDate ?? DateTime.now();
+    hasCustomDate = false;
+  }
+}
+
+class DropScreen extends StatefulWidget {
+  const DropScreen({super.key, this.onOpenProfile, this.draftController});
+
+  final VoidCallback? onOpenProfile;
+  final DropDraftController? draftController;
+
+  @override
+  State<DropScreen> createState() => _DropScreenState();
+}
+
+class _DropScreenState extends State<DropScreen> {
+  late final DropDraftController _ownedDraftController = DropDraftController();
+
+  DropDraftController get _draftController =>
+      widget.draftController ?? _ownedDraftController;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +67,7 @@ class DropScreen extends StatelessWidget {
               label: '個人設定',
               size: 44,
               iconSize: 20,
-              onTap: () {},
+              onTap: widget.onOpenProfile ?? () {},
             ),
           ],
         ),
@@ -79,14 +113,16 @@ class DropScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const _DropEntryCard(),
+        _DropEntryCard(draftController: _draftController),
       ],
     );
   }
 }
 
 class _DropEntryCard extends StatefulWidget {
-  const _DropEntryCard();
+  const _DropEntryCard({required this.draftController});
+
+  final DropDraftController draftController;
 
   @override
   State<_DropEntryCard> createState() => _DropEntryCardState();
@@ -99,16 +135,48 @@ class _DropEntryCardState extends State<_DropEntryCard> {
   final TextEditingController _tagController = TextEditingController();
   int _selectedSourceIndex = 0;
   final Set<int> _selectedTagIndices = {};
-  final List<String> _manualTags = List.of(reflectionSuggestedTags);
+  List<String> _manualTags = List.of(reflectionSuggestedTags);
   DateTime _selectedDate = DateTime.now();
   bool _hasCustomDate = false;
   String? _statusText;
 
   @override
+  void initState() {
+    super.initState();
+    _restoreDraft();
+    _textController.addListener(_syncTextDraft);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DropEntryCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.draftController != widget.draftController) {
+      _restoreDraft();
+    }
+  }
+
+  @override
   void dispose() {
+    _textController.removeListener(_syncTextDraft);
     _textController.dispose();
     _tagController.dispose();
     super.dispose();
+  }
+
+  void _restoreDraft() {
+    final draft = widget.draftController;
+    _textController.text = draft.text;
+    _selectedSourceIndex = draft.selectedSourceIndex;
+    _selectedTagIndices
+      ..clear()
+      ..addAll(draft.selectedTagIndices);
+    _manualTags = List.of(draft.manualTags);
+    _selectedDate = draft.selectedDate;
+    _hasCustomDate = draft.hasCustomDate;
+  }
+
+  void _syncTextDraft() {
+    widget.draftController.text = _textController.text;
   }
 
   Future<void> _saveDrop() async {
@@ -132,11 +200,10 @@ class _DropEntryCardState extends State<_DropEntryCard> {
     if (!mounted) {
       return;
     }
+    widget.draftController.reset();
     _textController.clear();
     setState(() {
-      _selectedTagIndices.clear();
-      _selectedDate = DateTime.now();
-      _hasCustomDate = false;
+      _restoreDraft();
       _statusText = '已儲存在本機。';
     });
   }
@@ -186,6 +253,8 @@ class _DropEntryCardState extends State<_DropEntryCard> {
                 setState(() {
                   _selectedDate = date;
                   _hasCustomDate = true;
+                  widget.draftController.selectedDate = date;
+                  widget.draftController.hasCustomDate = true;
                 });
               },
             ),
@@ -204,7 +273,12 @@ class _DropEntryCardState extends State<_DropEntryCard> {
                 _SourceChip(
                   source: reflectionSourceOptions[index],
                   selected: index == _selectedSourceIndex,
-                  onTap: () => setState(() => _selectedSourceIndex = index),
+                  onTap: () {
+                    setState(() {
+                      _selectedSourceIndex = index;
+                      widget.draftController.selectedSourceIndex = index;
+                    });
+                  },
                 ),
             ],
           ),
@@ -225,6 +299,9 @@ class _DropEntryCardState extends State<_DropEntryCard> {
                       } else {
                         _selectedTagIndices.add(index);
                       }
+                      widget.draftController.selectedTagIndices
+                        ..clear()
+                        ..addAll(_selectedTagIndices);
                     });
                   },
                 ),
@@ -397,6 +474,10 @@ class _DropEntryCardState extends State<_DropEntryCard> {
         index = _manualTags.length - 1;
       }
       _selectedTagIndices.add(index);
+      widget.draftController.manualTags = List.of(_manualTags);
+      widget.draftController.selectedTagIndices
+        ..clear()
+        ..addAll(_selectedTagIndices);
     });
   }
 }

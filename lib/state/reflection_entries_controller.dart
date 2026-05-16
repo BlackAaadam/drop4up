@@ -142,6 +142,17 @@ class ReflectionEntriesController extends ChangeNotifier {
     await _saveWithRollback(previousEntries, document.entries);
   }
 
+  Future<void> mergeDocument(ReflectionEntryDocument document) async {
+    final previousEntries = _entries;
+    final existingIds = _entries.map((entry) => entry.id).toSet();
+    final mergedEntries = [
+      ..._entries,
+      for (final entry in document.entries)
+        if (!existingIds.contains(entry.id)) entry,
+    ];
+    await _saveWithRollback(previousEntries, mergedEntries);
+  }
+
   Future<void> _replaceEntry(
     String id,
     ReflectionEntry Function(ReflectionEntry entry) update,

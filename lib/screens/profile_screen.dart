@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/profile_backup_file_service.dart';
 import '../data/reflection_entry.dart';
 import '../data/reflection_entry_document.dart';
+import '../state/drop4up_preferences_scope.dart';
 import '../state/reflection_entries_scope.dart';
 import '../ui/drop4up_dialog_route.dart';
 import '../ui/drop4up_tactile_surface.dart';
@@ -12,6 +13,8 @@ import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
 enum _ProfileActionKind { backup, restore, preferences, about }
+
+enum _RestoreStrategy { merge, replace }
 
 const _profileActions = [
   _ProfileAction(
@@ -29,7 +32,7 @@ const _profileActions = [
   _ProfileAction(
     kind: _ProfileActionKind.preferences,
     title: '偏好設定',
-    subtitle: '安靜的本機選項會在之後加入。',
+    subtitle: '文字大小等本機選項。',
     icon: Icons.tune_rounded,
   ),
   _ProfileAction(
@@ -420,7 +423,7 @@ Future<void> _showPreferencesSheet(BuildContext context) async {
     context,
     title: '偏好設定',
     icon: Icons.tune_rounded,
-    child: const _SimpleSheetBody(text: '安靜的本機偏好設定會在之後加入。這一版先專注在資料照護與備份安全。'),
+    child: const _PreferencesForm(),
   );
 }
 
@@ -631,6 +634,7 @@ class _RestoreDataFormState extends State<_RestoreDataForm> {
   bool _isRestoring = false;
   bool _isPickingFile = false;
   ReflectionEntryDocument? _pendingFileDocument;
+  _RestoreStrategy _strategy = _RestoreStrategy.merge;
 
   @override
   void dispose() {
@@ -647,10 +651,17 @@ class _RestoreDataFormState extends State<_RestoreDataForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '選擇一份 Drop4Up 備份檔，或貼上備份資料。還原會取代此裝置上的本機 prototype 紀錄。',
+          '選擇一份 Drop4Up 備份檔，或貼上備份資料。預設會合併到本機紀錄；你也可以選擇取代全部。',
           style: textTheme.bodyMedium?.copyWith(
             color: Drop4UpTokens.textSecondary,
           ),
+        ),
+        const SizedBox(height: 14),
+        _RestoreStrategySelector(
+          strategy: _strategy,
+          onChanged: _isRestoring
+              ? null
+              : (strategy) => setState(() => _strategy = strategy),
         ),
         const SizedBox(height: 14),
         PrimaryDropButton(
@@ -743,7 +754,7 @@ class _RestoreDataFormState extends State<_RestoreDataForm> {
 
     try {
       final document = parseProfileBackupDocumentText(_controller.text);
-      await _restoreDocument(document, '本機紀錄已還原。');
+      await _restoreDocument(document);
     } catch (_) {
       if (!mounted) {
         return;
@@ -797,7 +808,7 @@ class _RestoreDataFormState extends State<_RestoreDataForm> {
     });
 
     try {
-      await _restoreDocument(document, '本機紀錄已從備份檔還原。');
+      await _restoreDocument(document);
     } catch (_) {
       if (!mounted) {
         return;
@@ -809,14 +820,21 @@ class _RestoreDataFormState extends State<_RestoreDataForm> {
     }
   }
 
-  Future<void> _restoreDocument(
-    ReflectionEntryDocument document,
-    String successMessage,
-  ) async {
-    await ReflectionEntriesScope.read(context).restoreDocument(document);
+  Future<void> _restoreDocument(ReflectionEntryDocument document) async {
+    final controller = ReflectionEntriesScope.read(context);
+    switch (_strategy) {
+      case _RestoreStrategy.merge:
+        await controller.mergeDocument(document);
+      case _RestoreStrategy.replace:
+        await controller.restoreDocument(document);
+    }
     if (!mounted) {
       return;
     }
+    final successMessage = switch (_strategy) {
+      _RestoreStrategy.merge => '備份紀錄已合併到本機。',
+      _RestoreStrategy.replace => '本機紀錄已取代為備份內容。',
+    };
     Navigator.of(context).pop();
     ScaffoldMessenger.of(
       context,
@@ -872,6 +890,276 @@ class _RestorePreviewCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _RestoreStrategySelector extends StatelessWidget {
+  const _RestoreStrategySelector({
+    required this.strategy,
+    required this.onChanged,
+  });
+
+  final _RestoreStrategy strategy;
+  final ValueChanged<_RestoreStrategy>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _RestoreStrategyChip(
+            key: const Key('profile_restore_strategy_merge'),
+            label: '合併',
+            selected: strategy == _RestoreStrategy.merge,
+            onTap: onChanged == null
+                ? null
+                : () => onChanged!(_RestoreStrategy.merge),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _RestoreStrategyChip(
+            key: const Key('profile_restore_strategy_replace'),
+            label: '取代全部',
+            selected: strategy == _RestoreStrategy.replace,
+            onTap: onChanged == null
+                ? null
+                : () => onChanged!(_RestoreStrategy.replace),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RestoreStrategyChip extends StatelessWidget {
+  const _RestoreStrategyChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final color = selected
+        ? Drop4UpTokens.lightBlue.withValues(alpha: 0.34)
+        : Drop4UpTokens.cardSurface;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Drop4UpTactileSurface(
+          variant: selected
+              ? Drop4UpTactileSurfaceVariant.inset
+              : Drop4UpTactileSurfaceVariant.raised,
+          radius: Drop4UpTokens.pillRadius,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          color: color,
+          child: Center(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.labelLarge?.copyWith(
+                color: selected
+                    ? Drop4UpTokens.primaryBlue
+                    : Drop4UpTokens.textPrimary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreferencesForm extends StatelessWidget {
+  const _PreferencesForm();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final preferencesController = Drop4UpPreferencesScope.of(context);
+    final largeText = preferencesController.preferences.largeText;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '偏好設定只保存在本機，用來讓 prototype 更適合安靜回看。',
+          style: textTheme.bodyMedium?.copyWith(
+            color: Drop4UpTokens.textSecondary,
+            height: 1.42,
+          ),
+        ),
+        const SizedBox(height: 14),
+        _PreferenceToggleRow(
+          key: const Key('profile_large_text_toggle'),
+          title: '大字體模式',
+          subtitle: largeText ? '目前使用較大的閱讀文字。' : '目前使用標準文字大小。',
+          selected: largeText,
+          onTap: preferencesController.isSaving
+              ? null
+              : () async {
+                  try {
+                    await Drop4UpPreferencesScope.read(
+                      context,
+                    ).updateLargeText(!largeText);
+                  } catch (_) {
+                    // The controller rolls back and exposes the error below.
+                  }
+                },
+        ),
+        if (preferencesController.error != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            '目前無法儲存偏好設定，請稍後再試。',
+            key: const Key('profile_preferences_error'),
+            style: textTheme.bodySmall?.copyWith(
+              color: Drop4UpTokens.primaryBlue,
+            ),
+          ),
+        ],
+        const SizedBox(height: 18),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: 128,
+            child: PrimaryDropButton(
+              label: '完成',
+              icon: Icons.check_rounded,
+              onTap: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreferenceToggleRow extends StatelessWidget {
+  const _PreferenceToggleRow({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Semantics(
+      button: true,
+      toggled: selected,
+      label: title,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Drop4UpTactileSurface(
+          variant: selected
+              ? Drop4UpTactileSurfaceVariant.inset
+              : Drop4UpTactileSurfaceVariant.raised,
+          radius: 24,
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          color: selected
+              ? Drop4UpTokens.lightBlue.withValues(alpha: 0.34)
+              : Drop4UpTokens.cardSurface,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: textTheme.labelLarge?.copyWith(
+                        color: Drop4UpTokens.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      subtitle,
+                      key: const Key('profile_large_text_status'),
+                      style: textTheme.labelMedium?.copyWith(
+                        color: Drop4UpTokens.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _PreferenceToggle(selected: selected),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreferenceToggle extends StatelessWidget {
+  const _PreferenceToggle({required this.selected});
+
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: Drop4UpTokens.calmDuration,
+      curve: Drop4UpTokens.calmCurve,
+      width: 48,
+      height: 28,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Drop4UpTokens.pillRadius),
+        color: selected ? Drop4UpTokens.primaryBlue : Drop4UpTokens.cardSurface,
+        boxShadow: [
+          BoxShadow(
+            color: Drop4UpTokens.warmShadow.withValues(alpha: 0.38),
+            offset: const Offset(1.8, 2.8),
+            blurRadius: 6,
+            spreadRadius: -3,
+          ),
+          BoxShadow(
+            color: Drop4UpTokens.softWhite.withValues(alpha: 0.78),
+            offset: const Offset(-1, -1),
+            blurRadius: 3,
+            spreadRadius: -1.8,
+          ),
+        ],
+      ),
+      child: Align(
+        alignment: selected ? Alignment.centerRight : Alignment.centerLeft,
+        child: AnimatedContainer(
+          duration: Drop4UpTokens.calmDuration,
+          curve: Drop4UpTokens.calmCurve,
+          width: 20,
+          height: 20,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Drop4UpTokens.softWhite,
+          ),
+        ),
       ),
     );
   }

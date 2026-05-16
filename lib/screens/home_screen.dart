@@ -8,10 +8,16 @@ import '../ui/soft_icon_button.dart';
 import '../ui/soft_surface.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.onOpenJournalAll, this.onOpenJournalTag});
+  const HomeScreen({
+    super.key,
+    this.onOpenJournalAll,
+    this.onOpenJournalTag,
+    this.onOpenProfile,
+  });
 
   final VoidCallback? onOpenJournalAll;
   final ValueChanged<String>? onOpenJournalTag;
+  final VoidCallback? onOpenProfile;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -19,17 +25,30 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? _selectedTag;
+  int _reflectionIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final entries = ReflectionEntriesScope.of(context).entries;
     final tags = _buildHomeTags(entries);
-    final selectedEntry = _selectReflectionEntry(entries, _selectedTag);
 
     if (_selectedTag != null && !tags.any((tag) => tag.label == _selectedTag)) {
       _selectedTag = null;
+      _reflectionIndex = 0;
     }
+    final reflectionEntries = _buildReflectionEntries(entries, _selectedTag);
+    final reflectionPageCount = reflectionEntries.isEmpty
+        ? 1
+        : reflectionEntries.length > 3
+        ? 3
+        : reflectionEntries.length;
+    if (_reflectionIndex >= reflectionPageCount) {
+      _reflectionIndex = 0;
+    }
+    final selectedEntry = reflectionEntries.isEmpty
+        ? null
+        : reflectionEntries[_reflectionIndex];
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -48,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
               label: '個人設定',
               size: 44,
               iconSize: 20,
-              onTap: () {},
+              onTap: widget.onOpenProfile ?? () {},
             ),
           ],
         ),
@@ -66,7 +85,21 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        _ReflectionCard(entry: selectedEntry, selectedTag: _selectedTag),
+        _ReflectionCard(
+          entry: selectedEntry,
+          selectedTag: _selectedTag,
+          currentPage: _reflectionIndex,
+          pageCount: reflectionPageCount,
+          onNext: reflectionPageCount <= 1
+              ? null
+              : () => setState(() {
+                  _reflectionIndex =
+                      (_reflectionIndex + 1) % reflectionPageCount;
+                }),
+          onPageSelected: reflectionPageCount <= 1
+              ? null
+              : (page) => setState(() => _reflectionIndex = page),
+        ),
         const SizedBox(height: 18),
         Row(
           children: [
@@ -109,6 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   setState(() {
                     _selectedTag = _selectedTag == tag.label ? null : tag.label;
+                    _reflectionIndex = 0;
                   });
                 },
               ),
@@ -120,10 +154,21 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _ReflectionCard extends StatelessWidget {
-  const _ReflectionCard({required this.entry, required this.selectedTag});
+  const _ReflectionCard({
+    required this.entry,
+    required this.selectedTag,
+    required this.currentPage,
+    required this.pageCount,
+    required this.onNext,
+    required this.onPageSelected,
+  });
 
   final ReflectionEntry? entry;
   final String? selectedTag;
+  final int currentPage;
+  final int pageCount;
+  final VoidCallback? onNext;
+  final ValueChanged<int>? onPageSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -139,10 +184,17 @@ class _ReflectionCard extends StatelessWidget {
             children: [
               Text('今日回望', style: textTheme.titleMedium),
               const Spacer(),
-              Icon(
-                Icons.shuffle_rounded,
-                size: 24,
-                color: Drop4UpTokens.textSecondary,
+              GestureDetector(
+                key: const Key('home_reflection_next_button'),
+                behavior: HitTestBehavior.opaque,
+                onTap: onNext,
+                child: Icon(
+                  Icons.shuffle_rounded,
+                  size: 24,
+                  color: onNext == null
+                      ? Drop4UpTokens.textSecondary.withValues(alpha: 0.46)
+                      : Drop4UpTokens.textSecondary,
+                ),
               ),
             ],
           ),
@@ -151,12 +203,17 @@ class _ReflectionCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              _PageDot(active: true),
-              SizedBox(width: 8),
-              _PageDot(active: false),
-              SizedBox(width: 8),
-              _PageDot(active: false),
+            children: [
+              for (var index = 0; index < pageCount; index++) ...[
+                _PageDot(
+                  key: ValueKey('home_reflection_dot_$index'),
+                  active: index == currentPage,
+                  onTap: onPageSelected == null
+                      ? null
+                      : () => onPageSelected!(index),
+                ),
+                if (index != pageCount - 1) const SizedBox(width: 8),
+              ],
             ],
           ),
         ],
@@ -514,21 +571,32 @@ class _ReflectionLandscapePainter extends CustomPainter {
 }
 
 class _PageDot extends StatelessWidget {
-  const _PageDot({required this.active});
+  const _PageDot({super.key, required this.active, required this.onTap});
 
   final bool active;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 8,
-      height: 8,
-      child: DecoratedBox(
-        decoration: ShapeDecoration(
-          color: active
-              ? Drop4UpTokens.primaryBlue
-              : Drop4UpTokens.textSecondary.withValues(alpha: 0.36),
-          shape: const CircleBorder(),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: 18,
+        height: 18,
+        child: Center(
+          child: AnimatedContainer(
+            duration: Drop4UpTokens.quickDuration,
+            curve: Drop4UpTokens.calmCurve,
+            width: active ? 9 : 7,
+            height: active ? 9 : 7,
+            decoration: ShapeDecoration(
+              color: active
+                  ? Drop4UpTokens.primaryBlue
+                  : Drop4UpTokens.textSecondary.withValues(alpha: 0.36),
+              shape: const CircleBorder(),
+            ),
+          ),
         ),
       ),
     );
@@ -583,12 +651,12 @@ List<_HomeTagStat> _buildHomeTags(List<ReflectionEntry> entries) {
   return stats.take(6).toList();
 }
 
-ReflectionEntry? _selectReflectionEntry(
+List<ReflectionEntry> _buildReflectionEntries(
   List<ReflectionEntry> entries,
   String? selectedTag,
 ) {
   if (entries.isEmpty) {
-    return null;
+    return const [];
   }
 
   final candidates = selectedTag == null
@@ -601,13 +669,14 @@ ReflectionEntry? _selectReflectionEntry(
             )
             .toList();
   final source = candidates.isEmpty ? entries : candidates;
-
-  for (final entry in source) {
-    if (entry.isFavorite) {
-      return entry;
+  final sorted = List<ReflectionEntry>.of(source);
+  sorted.sort((a, b) {
+    if (a.isFavorite != b.isFavorite) {
+      return a.isFavorite ? -1 : 1;
     }
-  }
-  return source.first;
+    return b.createdAt.compareTo(a.createdAt);
+  });
+  return sorted.take(3).toList();
 }
 
 String _entryMeta(ReflectionEntry entry, String? selectedTag) {

@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:drop4up/main.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_reflection_entry_repository.dart';
@@ -46,6 +45,32 @@ void main() {
     expect(find.text('偏好設定'), findsOneWidget);
     expect(find.text('關於 Drop4Up'), findsOneWidget);
     expect(find.text('Profile shell preview'), findsNothing);
+  });
+
+  testWidgets('Home and Drop profile buttons open Profile tab', (tester) async {
+    tester.view.physicalSize = const Size(393, 873);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      Drop4UpPreviewApp(repository: TestReflectionEntryRepository()),
+    );
+    await _pumpUi(tester);
+
+    await tester.tap(find.byIcon(Icons.person_outline_rounded));
+    await _pumpUi(tester);
+
+    expect(find.text('Profile'), findsWidgets);
+    expect(find.text('備份資料'), findsOneWidget);
+
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+    await tester.tap(find.byIcon(Icons.person_outline_rounded));
+    await _pumpUi(tester);
+
+    expect(find.text('Profile'), findsWidgets);
+    expect(find.text('備份資料'), findsOneWidget);
   });
 }
 

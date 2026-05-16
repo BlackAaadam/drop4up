@@ -27,53 +27,53 @@ class Drop4UpTokens {
   static const Duration quickDuration = Duration(milliseconds: 120);
   static const Curve calmCurve = Curves.easeOutCubic;
 
-  static TextTheme textTheme() {
-    return const TextTheme(
+  static TextTheme textTheme({double textScale = 1}) {
+    return TextTheme(
       headlineLarge: TextStyle(
         color: textPrimary,
-        fontSize: 34,
+        fontSize: 34 * textScale,
         fontWeight: FontWeight.w600,
         height: 1.12,
         letterSpacing: 0,
       ),
       titleLarge: TextStyle(
         color: textPrimary,
-        fontSize: 22,
+        fontSize: 22 * textScale,
         fontWeight: FontWeight.w600,
         height: 1.22,
         letterSpacing: 0,
       ),
       titleMedium: TextStyle(
         color: textPrimary,
-        fontSize: 18,
+        fontSize: 18 * textScale,
         fontWeight: FontWeight.w600,
         height: 1.25,
         letterSpacing: 0,
       ),
       bodyLarge: TextStyle(
         color: textPrimary,
-        fontSize: 16,
+        fontSize: 16 * textScale,
         fontWeight: FontWeight.w400,
         height: 1.45,
         letterSpacing: 0,
       ),
       bodyMedium: TextStyle(
         color: textPrimary,
-        fontSize: 15,
+        fontSize: 15 * textScale,
         fontWeight: FontWeight.w400,
         height: 1.42,
         letterSpacing: 0,
       ),
       labelLarge: TextStyle(
         color: textPrimary,
-        fontSize: 15,
+        fontSize: 15 * textScale,
         fontWeight: FontWeight.w600,
         height: 1.2,
         letterSpacing: 0,
       ),
       labelMedium: TextStyle(
         color: textSecondary,
-        fontSize: 13,
+        fontSize: 13 * textScale,
         fontWeight: FontWeight.w500,
         height: 1.2,
         letterSpacing: 0,

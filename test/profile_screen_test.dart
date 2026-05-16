@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:drop4up/data/profile_backup_file_service.dart';
+import 'package:drop4up/data/drop4up_preferences.dart';
+import 'package:drop4up/data/drop4up_preferences_repository.dart';
 import 'package:drop4up/data/reflection_entry.dart';
 import 'package:drop4up/data/reflection_entry_document.dart';
 import 'package:drop4up/main.dart';
@@ -62,7 +65,7 @@ void main() {
     expect(find.byKey(const Key('profile_backup_json_text')), findsNothing);
   });
 
-  testWidgets('Restore valid JSON replaces local entries', (tester) async {
+  testWidgets('Restore valid JSON can replace local entries', (tester) async {
     final repository = await _pumpProfileHarness(
       tester,
       entries: [_entry(id: 'old-entry', text: 'Old local drop')],
@@ -84,6 +87,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('選擇備份檔'), findsOneWidget);
+    expect(find.text('合併'), findsOneWidget);
+    expect(find.text('取代全部'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('profile_restore_strategy_replace')));
+    await _pumpUi(tester);
     await tester.enterText(
       find.byKey(const Key('profile_restore_json_input')),
       backupJson,
@@ -98,7 +105,61 @@ void main() {
     expect(entry.text.codeUnits, restoredText.codeUnits);
     expect(entry.source, '禱告');
     expect(entry.tags, const ['信心']);
-    expect(find.text('本機紀錄已還原。'), findsOneWidget);
+    expect(find.text('本機紀錄已取代為備份內容。'), findsOneWidget);
+  });
+
+  testWidgets('Restore valid JSON merges by default without rewriting text', (
+    tester,
+  ) async {
+    const localText = '  Local text remains exact.\nAmen.  ';
+    const restoredText = '  Restored text stays exact.\nSecond line.  ';
+    final repository = await _pumpProfileHarness(
+      tester,
+      entries: [_entry(id: 'local-entry', text: localText)],
+    );
+
+    await tester.tap(find.text('還原資料'));
+    await _pumpUi(tester);
+    await tester.enterText(
+      find.byKey(const Key('profile_restore_json_input')),
+      _backupJson([
+        _entry(
+          id: 'local-entry',
+          text: 'Backup duplicate should not overwrite local text.',
+        ),
+        _entry(id: 'restored-entry', text: restoredText, source: '閱讀'),
+      ]),
+    );
+    await tester.tap(find.byKey(const Key('profile_restore_confirm_button')));
+    await _pumpUi(tester);
+
+    final entries = (await repository.load()).entries;
+
+    expect(entries, hasLength(2));
+    expect(
+      entries.map((entry) => entry.id),
+      containsAll(['local-entry', 'restored-entry']),
+    );
+    expect(
+      entries.singleWhere((entry) => entry.id == 'local-entry').text,
+      localText,
+    );
+    expect(
+      entries.singleWhere((entry) => entry.id == 'local-entry').text.codeUnits,
+      localText.codeUnits,
+    );
+    expect(
+      entries.singleWhere((entry) => entry.id == 'restored-entry').text,
+      restoredText,
+    );
+    expect(
+      entries
+          .singleWhere((entry) => entry.id == 'restored-entry')
+          .text
+          .codeUnits,
+      restoredText.codeUnits,
+    );
+    expect(find.text('備份紀錄已合併到本機。'), findsOneWidget);
   });
 
   testWidgets('Restore sheet exposes file entry and preserves paste restore', (
@@ -125,6 +186,8 @@ void main() {
         _entry(id: 'preview-entry', text: restoredText, source: '閱讀'),
       ]),
     );
+    await tester.tap(find.byKey(const Key('profile_restore_strategy_replace')));
+    await _pumpUi(tester);
     await tester.tap(find.byKey(const Key('profile_restore_confirm_button')));
     await _pumpUi(tester);
 
@@ -164,7 +227,8 @@ void main() {
 
     await tester.tap(find.text('偏好設定'));
     await _pumpUi(tester);
-    expect(find.textContaining('安靜的本機偏好設定會在之後加入'), findsOneWidget);
+    expect(find.text('大字體模式'), findsOneWidget);
+    expect(find.text('目前使用標準文字大小。'), findsOneWidget);
     await tester.tap(find.text('完成'));
     await _pumpUi(tester);
 
@@ -175,12 +239,49 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('Preferences large text setting persists and updates theme', (
+    tester,
+  ) async {
+    final preferencesRepository = _TestDrop4UpPreferencesRepository();
+    await _pumpProfileHarness(
+      tester,
+      entries: const [],
+      preferencesRepository: preferencesRepository,
+    );
+    final before = tester.widget<Text>(find.text('備份資料')).style?.fontSize;
+
+    await tester.tap(find.text('偏好設定'));
+    await _pumpUi(tester);
+    await tester.tap(find.byKey(const Key('profile_large_text_toggle')));
+    await _pumpUi(tester);
+
+    expect(preferencesRepository.preferences.largeText, isTrue);
+    expect(find.text('目前使用較大的閱讀文字。'), findsOneWidget);
+    await tester.tap(find.text('完成'));
+    await _pumpUi(tester);
+    final after = tester.widget<Text>(find.text('備份資料')).style?.fontSize;
+    expect(after, greaterThan(before!));
+
+    await tester.pumpWidget(
+      Drop4UpPreviewApp(
+        repository: TestReflectionEntryRepository(),
+        preferencesRepository: preferencesRepository,
+      ),
+    );
+    await _pumpUi(tester);
+
+    await tester.tap(find.text('偏好設定'));
+    await _pumpUi(tester);
+    expect(find.text('目前使用較大的閱讀文字。'), findsOneWidget);
+  });
 }
 
 Future<TestReflectionEntryRepository> _pumpProfileHarness(
   WidgetTester tester, {
   required List<ReflectionEntry> entries,
   ProfileBackupFileService? backupFileService,
+  Drop4UpPreferencesRepository? preferencesRepository,
 }) async {
   tester.view.physicalSize = const Size(393, 873);
   tester.view.devicePixelRatio = 1;
@@ -192,6 +293,7 @@ Future<TestReflectionEntryRepository> _pumpProfileHarness(
   await tester.pumpWidget(
     Drop4UpPreviewApp(
       repository: repository,
+      preferencesRepository: preferencesRepository,
       profileBackupFileService: backupFileService,
       clock: () => DateTime.utc(2026, 5, 9, 12),
     ),
@@ -200,6 +302,27 @@ Future<TestReflectionEntryRepository> _pumpProfileHarness(
   await tester.tap(find.text('Profile'));
   await _pumpUi(tester);
   return repository;
+}
+
+class _TestDrop4UpPreferencesRepository extends Drop4UpPreferencesRepository {
+  _TestDrop4UpPreferencesRepository()
+    : super(documentsDirectoryProvider: _unusedDirectoryProvider);
+
+  Drop4UpPreferences preferences = Drop4UpPreferences.defaults;
+
+  @override
+  Future<Drop4UpPreferences> load() async {
+    return preferences;
+  }
+
+  @override
+  Future<void> save(Drop4UpPreferences preferences) async {
+    this.preferences = preferences;
+  }
+}
+
+Future<Directory> _unusedDirectoryProvider() async {
+  throw StateError('_TestDrop4UpPreferencesRepository does not use file IO.');
 }
 
 ReflectionEntry _entry({
