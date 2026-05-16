@@ -24,7 +24,7 @@ Latest verification:
 
 - `flutter pub get`: passed.
 - `flutter analyze`: passed.
-- `flutter test`: passed with 59 tests.
+- `flutter test`: passed with 60 tests.
 
 ## Recently Completed
 
@@ -42,6 +42,8 @@ Latest verification:
 - Locked Drop draft behavior as intentionally session-only.
 - Locked Profile preferences scope to large-text mode only for this prototype phase.
 - Completed stage-ready prototype freeze cleanup and created review commit `f8aa53f` (`Freeze Drop4Up UI prototype`).
+- Started local-only beta hardening with Drop save-failure feedback that preserves the unsaved draft.
+- Added `handoff/BETA_CHECKLIST.md` to track data safety, failure states, manual QA, and artifact policy for internal beta review.
 
 ## Remaining Gaps
 
@@ -142,6 +144,27 @@ Acceptance:
 - Handoff docs match the actual app behavior and test count.
 - No unrelated generated files are staged by accident.
 - Freeze package is committed and review-ready locally.
+
+### Step 6 - Local-Only Beta Hardening Kickoff - Done
+
+Goal: move the frozen prototype toward an internal local-only beta without changing schemas, navigation, or product scope.
+
+Completed:
+
+- Added a beta checklist covering data safety, UX failure states, manual QA, and artifact policy.
+- Kept `ReflectionEntry`, `ReflectionEntryDocument`, and `Drop4UpPreferences` schemas unchanged.
+- Kept Drop draft behavior session-only.
+- Added visible Drop save-failure guidance for local repository errors.
+- Preserved unsaved Drop text after a failed save attempt.
+- Added widget coverage for failed Drop saves.
+- Left accumulated untracked QA/reference artifacts untouched.
+
+Acceptance:
+
+- Failed local save does not clear user text.
+- Failed local save does not write a partial entry.
+- User sees a clear failure message in the Drop screen.
+- `flutter pub get`, `flutter analyze`, and `flutter test` pass.
 
 ## Standard Verification
 

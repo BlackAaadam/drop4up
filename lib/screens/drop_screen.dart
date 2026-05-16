@@ -190,12 +190,22 @@ class _DropEntryCardState extends State<_DropEntryCard> {
       for (final index in _selectedTagIndices) _manualTags[index],
     ];
 
-    await ReflectionEntriesScope.read(context).addEntry(
-      text: text,
-      source: reflectionSourceOptions[_selectedSourceIndex].label,
-      tags: selectedTags,
-      createdAt: _hasCustomDate ? drop4UpDateOnlyUtc(_selectedDate) : null,
-    );
+    try {
+      await ReflectionEntriesScope.read(context).addEntry(
+        text: text,
+        source: reflectionSourceOptions[_selectedSourceIndex].label,
+        tags: selectedTags,
+        createdAt: _hasCustomDate ? drop4UpDateOnlyUtc(_selectedDate) : null,
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _statusText = '暫時無法儲存，請稍後再試。內容仍保留在這裡。';
+      });
+      return;
+    }
 
     if (!mounted) {
       return;

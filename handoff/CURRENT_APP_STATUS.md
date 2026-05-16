@@ -4,13 +4,13 @@ Last updated: 2026-05-17
 
 ## 1. One-line Status
 
-Drop4Up is currently a Flutter UI prototype with a working 4-tab shell, soft tactile design system, local reflection entry storage, Drop-to-Journal flow, in-session Drop draft handling, Journal management tools, visual card PNG export/share, Profile backup/restore, local preferences, screenshots, and passing automated tests.
+Drop4Up is currently a Flutter UI prototype entering local-only beta hardening, with a working 4-tab shell, soft tactile design system, local reflection entry storage, Drop-to-Journal flow, in-session Drop draft handling, Journal management tools, visual card PNG export/share, Profile backup/restore, local preferences, screenshots, and passing automated tests.
 
 It is not yet a production app. Backend, login, cloud sync, real AI, OCR, speech-to-text, payments, push notifications, and production database work are intentionally out of scope for the current phase.
 
 ## 2. Completion Level
 
-Current phase: polished Flutter UI prototype.
+Current phase: local-only beta hardening after polished Flutter UI prototype freeze.
 
 Estimated state by milestone:
 
@@ -25,7 +25,7 @@ Estimated state by milestone:
 | Journal | Functional prototype | Search, filters, favorite, edit, delete, visual card preview, PNG export/share. |
 | Profile | Functional prototype | Local stats, backup file creation/share, merge/replace restore from file or pasted backup, persisted large-text preference, about. |
 | Local persistence | Functional prototype | JSON document storage through repository/controller plus local preferences storage. |
-| Automated tests | Passing | `flutter test` passed with 59 tests. |
+| Automated tests | Passing | `flutter test` passed with 60 tests. |
 | Screenshot QA | Present | 393x873 screenshots exist for all main screens and the visual-card-dialog. |
 | Production readiness | Not started | No auth, backend, real AI/OCR/STT, cloud sync, analytics, payments, release hardening. |
 
@@ -175,6 +175,7 @@ Current limits:
 - No attachment storage.
 - Draft handling is in-session only; it is not written to disk.
 - Save path is local prototype persistence only.
+- Failed local saves show visible guidance and keep the unsaved text in the Drop input.
 
 ## 8. Journal Screen
 
@@ -289,7 +290,7 @@ Important guardrail currently covered:
 
 ## 11. Tests and Verification
 
-Commands run on 2026-05-16:
+Commands run on 2026-05-17:
 
 ```bash
 flutter pub get
@@ -301,12 +302,13 @@ Results:
 
 - `flutter pub get`: passed.
 - `flutter analyze`: passed, no issues found.
-- `flutter test`: passed, 59 tests.
+- `flutter test`: passed, 60 tests.
 
 Test coverage currently includes:
 
 - baseline four-tab navigation,
 - Drop save creates entries,
+- Drop save failure feedback and draft preservation,
 - Drop session-only draft survives tab changes but does not persist across app recreation,
 - saved entries appear in Journal,
 - reload loads persisted entries,
@@ -333,6 +335,7 @@ Test coverage currently includes:
 - restore from selected `.drop4up` file,
 - restore from pasted backup,
 - malformed restore rejection.
+- beta checklist coverage for data safety, UX failure states, manual QA, and artifact policy.
 
 ## 12. Screenshot Artifacts
 
@@ -395,6 +398,7 @@ Prototype decisions:
 Prototype gaps:
 
 - Screenshot QA exists for the main screens and the visual-card-dialog after the 2026-05-16 export/share update.
+- The local-only beta checklist marks 360 x 800 Journal and Profile screenshot QA as remaining manual items.
 
 Technical alignment item:
 
@@ -403,6 +407,7 @@ Technical alignment item:
 Repository status note:
 
 - The freeze package was committed locally as `f8aa53f` (`Freeze Drop4Up UI prototype`).
+- Local-only beta hardening now includes Drop save-failure UI feedback, widget coverage, and `handoff/BETA_CHECKLIST.md`.
 - Existing untracked screenshot/reference artifacts under `handoff/` remain untouched unless a later cleanup request explicitly includes them.
 - No git remote is configured, so push/PR work requires adding or configuring a remote first.
 
@@ -410,8 +415,10 @@ Repository status note:
 
 Highest-value next steps:
 
-1. Add/configure a git remote if the freeze commit should be pushed for review.
-2. Keep backend, login, AI, OCR, cloud sync, payments, social features, and speech-to-text out of scope unless the prototype phase is explicitly complete.
+1. Complete the remaining 360 x 800 Journal and Profile screenshot QA items in `handoff/BETA_CHECKLIST.md`.
+2. Continue local-only beta hardening around repository/backup/restore edge cases only when they do not require schema changes.
+3. Add/configure a git remote if the local review commits should be pushed.
+4. Keep backend, login, AI, OCR, cloud sync, payments, social features, and speech-to-text out of scope unless the prototype phase is explicitly complete.
 
 Recently completed:
 
@@ -426,3 +433,5 @@ Recently completed:
 - Completed Step 2 visual polish for Drop source chips and Profile footer readability.
 - Marked Drop draft as intentionally session-only and kept Profile preferences limited to large text.
 - Created local review commit `f8aa53f` for the freeze package.
+- Added Drop save-failure feedback with draft preservation for the local-only beta hardening pass.
+- Added `handoff/BETA_CHECKLIST.md`.

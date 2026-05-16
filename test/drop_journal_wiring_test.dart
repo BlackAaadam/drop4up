@@ -62,6 +62,30 @@ void main() {
     expect(entry.updatedAt, DateTime.utc(2026, 5, 7, 12));
   });
 
+  testWidgets('Drop save failure shows guidance and preserves draft', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(393, 873);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _FailingSaveReflectionEntryRepository();
+    const text = '  This draft must survive a failed local save.  ';
+
+    await _pumpApp(tester, repository: repository);
+    await tester.tap(find.text('Drop'));
+    await _pumpUi(tester);
+    await tester.enterText(find.byKey(const Key('drop_text_input')), text);
+    await tester.tap(find.byKey(const Key('save_drop_button')));
+    await _pumpUi(tester);
+
+    expect(repository.saveAttempts, 1);
+    expect(find.text('暫時無法儲存，請稍後再試。內容仍保留在這裡。'), findsOneWidget);
+    expect(_dropInputText(tester), text);
+    expect((await repository.load()).entries, isEmpty);
+  });
+
   testWidgets('Drop draft survives tab changes until save', (tester) async {
     final harness = await _pumpHarness(tester);
     const text = '  Draft text stays while I review Journal.\nAmen.  ';
@@ -305,4 +329,18 @@ class _Harness {
   const _Harness(this.repository);
 
   final TestReflectionEntryRepository repository;
+}
+
+class _FailingSaveReflectionEntryRepository
+    extends TestReflectionEntryRepository {
+  int saveAttempts = 0;
+
+  @override
+  Future<void> saveEntries(
+    List<ReflectionEntry> entries, {
+    DateTime? exportedAt,
+  }) async {
+    saveAttempts += 1;
+    throw StateError('Local save failed.');
+  }
 }
