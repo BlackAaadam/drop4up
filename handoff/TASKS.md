@@ -41,7 +41,7 @@ Latest verification:
 - Completed a narrow visual polish pass for Drop source chips and Profile footer readability.
 - Locked Drop draft behavior as intentionally session-only.
 - Locked Profile preferences scope to large-text mode only for this prototype phase.
-- Completed stage-ready prototype freeze cleanup without creating a commit.
+- Completed stage-ready prototype freeze cleanup and created review commit `f8aa53f` (`Freeze Drop4Up UI prototype`).
 
 ## Remaining Gaps
 
@@ -122,9 +122,9 @@ Acceptance:
 
 - No account, sync, notification, gamification, or analytics settings are added.
 
-### Step 5 - Handoff Cleanup Before Commit - Done
+### Step 5 - Handoff Cleanup and Review Commit - Done
 
-Goal: make the branch easier to review when the user asks for staging or commit.
+Goal: make the branch easier to review and capture the freeze package in git.
 
 Completed:
 
@@ -134,13 +134,14 @@ Completed:
   - `handoff/screenshots/step2_drop_polish_393x873.png`
   - `handoff/screenshots/step2_profile_polish_393x873.png`
 - Left `gfxinfo_*.txt`, `handoff/references/logo.png`, `handoff/references/prototype/`, and older/date-picker/taxonomy QA screenshots untracked and untouched.
-- Did not create a branch or commit.
+- Created review commit `f8aa53f` with message `Freeze Drop4Up UI prototype`.
+- Confirmed no git remote is configured, so push/PR is not available until a remote is added.
 
 Acceptance:
 
 - Handoff docs match the actual app behavior and test count.
 - No unrelated generated files are staged by accident.
-- Workspace is stage-ready for a future commit request.
+- Freeze package is committed and review-ready locally.
 
 ## Standard Verification
 
