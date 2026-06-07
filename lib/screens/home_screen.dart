@@ -58,7 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               'Drop4Up',
               style: textTheme.titleLarge?.copyWith(
-                color: Drop4UpTokens.primaryBlue,
+                color: Drop4UpTokens.primaryBlue.withValues(alpha: 0.92),
+                fontWeight: FontWeight.w500,
               ),
             ),
             const Spacer(),
@@ -73,15 +74,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 18),
         Text(
-          '安靜下來，\n記得祂的同在。',
-          style: textTheme.headlineLarge?.copyWith(fontSize: 29, height: 1.14),
+          'Be still and know\nHe is God',
+          style: textTheme.headlineLarge?.copyWith(
+            fontSize: 29,
+            fontWeight: FontWeight.w400,
+            height: 1.14,
+            color: Drop4UpTokens.textPrimary.withValues(alpha: 0.92),
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           '用一點時間回望今天心裡被觸動的地方。',
           style: textTheme.bodyLarge?.copyWith(
             fontSize: 15,
-            color: Drop4UpTokens.textPrimary.withValues(alpha: 0.72),
+            fontWeight: FontWeight.w400,
+            color: Drop4UpTokens.textPrimary.withValues(alpha: 0.64),
           ),
         ),
         const SizedBox(height: 18),
@@ -103,7 +110,13 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 18),
         Row(
           children: [
-            Text('探索標籤', style: textTheme.titleMedium),
+            Text(
+              '探索標籤',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w400,
+                color: Drop4UpTokens.textPrimary.withValues(alpha: 0.90),
+              ),
+            ),
             const Spacer(),
             GestureDetector(
               key: const Key('home_view_all_tags'),
@@ -121,7 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(
                   '查看全部',
                   style: textTheme.labelLarge?.copyWith(
-                    color: Drop4UpTokens.primaryBlue,
+                    color: Drop4UpTokens.primaryBlue.withValues(alpha: 0.88),
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
@@ -182,7 +196,13 @@ class _ReflectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('今日回望', style: textTheme.titleMedium),
+              Text(
+                '今日回望',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w400,
+                  color: Drop4UpTokens.textPrimary.withValues(alpha: 0.92),
+                ),
+              ),
               const Spacer(),
               GestureDetector(
                 key: const Key('home_reflection_next_button'),
@@ -192,8 +212,8 @@ class _ReflectionCard extends StatelessWidget {
                   Icons.shuffle_rounded,
                   size: 24,
                   color: onNext == null
-                      ? Drop4UpTokens.textSecondary.withValues(alpha: 0.46)
-                      : Drop4UpTokens.textSecondary,
+                      ? Drop4UpTokens.textSecondary.withValues(alpha: 0.42)
+                      : Drop4UpTokens.textSecondary.withValues(alpha: 0.82),
                 ),
               ),
             ],
@@ -275,7 +295,8 @@ class _SoftReflectionCanvas extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.titleLarge?.copyWith(
-                      color: Drop4UpTokens.textPrimary,
+                      color: Drop4UpTokens.textPrimary.withValues(alpha: 0.92),
+                      fontWeight: FontWeight.w400,
                       height: 1.26,
                     ),
                   ),
@@ -286,7 +307,10 @@ class _SoftReflectionCanvas extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.labelMedium?.copyWith(
-                      color: Drop4UpTokens.textSecondary,
+                      color: Drop4UpTokens.textSecondary.withValues(
+                        alpha: 0.86,
+                      ),
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
